@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BCP自動生成アプリ v3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --red:#C00000; --navy:#1F4E79; --blue:#2E74B5;
+  --green:#375623; --purple:#7F3F98; --gold:#7F6000;
+  --light:#F5F8FF; --border:#D0D9E8; --text:#1a1a2e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"游ゴシック","Yu Gothic","Noto Sans JP",sans-serif;background:#EEF2F7;color:var(--text)}
+
+/* TOP BAR */
+.topbar{background:var(--navy);color:white;padding:14px 32px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar .logo{font-size:9px;letter-spacing:2px;opacity:.7;text-transform:uppercase}
+.topbar h1{font-size:18px;font-weight:700}
+.topbar .ver{background:var(--blue);font-size:10px;padding:2px 8px;border-radius:3px}
+
+/* UPLOAD */
+#upload-screen{max-width:720px;margin:60px auto;padding:0 24px}
+.upload-card{background:white;border-radius:12px;box-shadow:0 4px 24px rgba(31,78,121,.12);overflow:hidden}
+.upload-card-header{background:linear-gradient(135deg,var(--navy),var(--blue));padding:32px 40px;color:white}
+.upload-card-header h2{font-size:22px;margin-bottom:8px}
+.upload-card-header p{font-size:13px;opacity:.85;line-height:1.7}
+.upload-card-body{padding:40px}
+
+.steps{display:flex;margin-bottom:36px}
+.step{flex:1;text-align:center;position:relative}
+.step::after{content:'';position:absolute;top:20px;left:60%;width:80%;height:2px;background:var(--border)}
+.step:last-child::after{display:none}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--blue);color:white;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative;z-index:1}
+.step-label{font-size:11px;color:#666;line-height:1.4}
+
+.drop-zone{border:2px dashed var(--blue);border-radius:10px;padding:48px 32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--light);margin-bottom:24px}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--red);background:#FFF5F5}
+.drop-icon{font-size:48px;margin-bottom:12px}
+.drop-zone h3{font-size:16px;color:var(--navy);margin-bottom:6px}
+.drop-zone p{font-size:12px;color:#888}
+#file-input{display:none}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--blue);color:white}.btn-primary:hover{background:var(--navy)}
+.btn-red{background:var(--red);color:white}.btn-red:hover{background:#9A0000}
+.btn-outline{background:white;color:var(--navy);border:2px solid var(--navy)}.btn-outline:hover{background:var(--light)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.file-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+.security-note{background:#F0F7F0;border-left:4px solid #2E8B57;padding:12px 16px;border-radius:4px;font-size:12px;color:#1A5C35;margin-top:20px;line-height:1.6}
+
+/* RESULT */
+#result-screen{display:none}
+.result-topbar{background:white;border-bottom:1px solid var(--border);padding:12px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.result-topbar h2{font-size:15px;color:var(--navy);flex:1}
+
+.tab-nav{display:flex;gap:4px;background:var(--navy);padding:8px 32px 0;overflow-x:auto}
+.tab-btn{padding:10px 18px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);border:none;border-radius:6px 6px 0 0;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit}
+.tab-btn:hover{background:rgba(255,255,255,.25);color:white}
+.tab-btn.active{background:white;color:var(--navy)}
+.tab-content{display:none;padding:32px;max-width:1100px;margin:0 auto}
+.tab-content.active{display:block}
+
+/* BCP DOC */
+.bcp-doc{background:white;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden}
+.doc-cover{background:linear-gradient(160deg,var(--navy) 0%,#0D2B4E 100%);padding:60px 48px;color:white;text-align:center}
+.doc-cover .cover-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;opacity:.6;margin-bottom:24px}
+.doc-cover h1{font-size:28px;margin-bottom:12px;line-height:1.4}
+.doc-cover .clinic-name{font-size:20px;color:#90CAF9;margin-bottom:32px}
+.doc-cover .cover-meta{display:inline-flex;gap:32px;font-size:12px;opacity:.7;border-top:1px solid rgba(255,255,255,.2);padding-top:20px}
+.doc-body{padding:40px 48px}
+
+.doc-chapter{margin-bottom:36px}
+.chapter-title{font-size:17px;color:white;background:var(--navy);padding:10px 20px;border-radius:6px;margin-bottom:16px;font-weight:700}
+.section-title{font-size:13px;color:var(--blue);margin:16px 0 8px;font-weight:700;padding-left:8px;border-left:3px solid var(--blue)}
+.doc-chapter p{font-size:12px;line-height:2;color:#333;margin-bottom:8px}
+.policy-list{list-style:none;padding:0;margin:8px 0}
+.policy-list li{font-size:12px;line-height:1.8;color:#333;padding:4px 0 4px 20px;position:relative}
+.policy-list li::before{content:"●";position:absolute;left:4px;color:var(--blue);font-size:10px;top:6px}
+
+/* TABLES */
+.bcp-table{width:100%;border-collapse:collapse;font-size:11px;margin:12px 0}
+.bcp-table th{background:var(--navy);color:white;padding:10px 12px;text-align:center;font-weight:700;border:1px solid #3A6EA5;font-size:11px}
+.bcp-table td{padding:9px 12px;border:1px solid #D0D9E8;vertical-align:top;line-height:1.8;font-size:11px}
+.bcp-table tr:nth-child(even) td{background:#F5F8FF}
+.stage-1 td{background:#FFE0E0 !important}
+.stage-2 td{background:#FFF2CC !important}
+.stage-3 td{background:#DEEAF1 !important}
+.stage-4 td{background:#F2F2F2 !important}
+
+/* ACTION CARDS */
+.cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.action-card{border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.card-header{padding:12px 16px;color:white;font-size:13px;font-weight:700}
+.card-body{background:white;padding:12px 16px}
+.card-section-title{font-size:10px;font-weight:700;color:white;padding:3px 8px;border-radius:3px;margin:8px 0 4px;display:inline-block}
+.card-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6;padding:2px 0;color:#333}
+.card-item::before{content:'□';font-size:13px;flex-shrink:0;color:#666}
+.card-rule{background:#FFF2CC;border-left:3px solid #F4B942;padding:6px 10px;font-size:10px;color:#7F4C00;margin-bottom:8px;border-radius:0 4px 4px 0}
+.card-note{font-size:10px;color:#888;font-style:italic;padding:2px 0 2px 20px}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.info-item{background:var(--light);border-radius:6px;padding:12px 16px}
+.info-label{font-size:10px;color:#888;margin-bottom:4px}
+.info-value{font-size:13px;font-weight:600;color:var(--navy)}
+
+/* BOTTLENECK */
+.bn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.bn-card{border-radius:6px;overflow:hidden}
+.bn-card-head{padding:8px 14px;font-size:11px;font-weight:700;color:white}
+.bn-card-body{background:#FAFAFA;padding:12px 14px;border:1px solid #E0E0E0;border-top:none;border-radius:0 0 6px 6px}
+.bn-card-body p{font-size:11px;line-height:1.8;color:#333;margin-bottom:4px}
+.bn-item{font-size:11px;color:#444;line-height:1.7;padding-left:12px;position:relative}
+.bn-item::before{content:"▷";position:absolute;left:0;color:var(--blue);font-size:9px;top:3px}
+
+.alert-box{background:#FFF5F5;border:1px solid #FFCCCC;border-radius:6px;padding:14px 16px;margin:12px 0;font-size:12px;color:#8B0000}
+.info-box{background:#F0F7FF;border:1px solid #BDD7EE;border-radius:6px;padding:14px 16px;margin:12px 0;font-size:12px;color:#1F4E79}
+
+/* EQUIPMENT */
+.priority-a{background:#FFE0E0}
+.priority-b{background:#FFF2CC}
+.priority-c{background:#DEEAF1}
+.priority-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;color:white}
+.badge-a{background:#C00000}.badge-b{background:#E36C0A}.badge-c{background:#0070C0}
+
+
+/* FACILITY SELECT SCREEN */
+#select-screen{max-width:720px;margin:60px auto;padding:0 24px;display:none}
+.select-card{background:white;border-radius:12px;box-shadow:0 4px 24px rgba(31,78,121,.12);overflow:hidden}
+.select-header{background:linear-gradient(135deg,var(--navy),var(--blue));padding:28px 40px;color:white}
+.select-header h2{font-size:20px;margin-bottom:6px}
+.select-header p{font-size:13px;opacity:.85}
+.select-body{padding:32px 40px}
+.facility-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.facility-btn{
+  border:2px solid var(--border);border-radius:10px;
+  padding:20px 16px;text-align:center;cursor:pointer;
+  background:white;transition:all .2s;font-family:inherit;
+}
+.facility-btn:hover{border-color:var(--blue);background:var(--light)}
+.facility-btn.selected{border-color:var(--blue);background:var(--light);box-shadow:0 0 0 3px rgba(46,116,181,.2)}
+.facility-icon{font-size:32px;margin-bottom:8px}
+.facility-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.facility-desc{font-size:10px;color:#888;line-height:1.4}
+.select-note{background:#FFF2CC;border-left:4px solid #F4B942;padding:10px 14px;border-radius:0 6px 6px 0;font-size:12px;color:#7F4C00;margin-bottom:20px}
+/* PRINT */
+.ref-section{background:white;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden;margin-top:24px}
+.ref-header{background:linear-gradient(135deg,#1F4E79,#2E74B5);padding:20px 32px;color:white}
+.ref-header h2{font-size:16px;margin-bottom:4px}
+.ref-header p{font-size:12px;opacity:.8;margin-top:4px}
+.ref-body{padding:28px 32px}
+.ref-item{border:1px solid #D0D9E8;border-radius:8px;padding:20px 24px;margin-bottom:20px;background:#FAFCFF}
+.ref-item h3{font-size:14px;color:#1F4E79;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #D0D9E8}
+.ref-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12px;margin-bottom:12px}
+.ref-meta .label{font-weight:700;color:#555;white-space:nowrap}
+.ref-meta .val{color:#333}
+.ref-url{background:#EEF4FF;padding:10px 14px;border-radius:6px;font-size:12px;word-break:break-all;margin:10px 0}
+.ref-url a{color:#1F4E79;font-weight:600;text-decoration:none}
+.ref-url a:hover{text-decoration:underline}
+.qr-wrapper{display:flex;align-items:flex-start;gap:24px;margin-top:12px}
+.qr-box{flex-shrink:0;padding:10px;background:white;border:2px solid #D0D9E8;border-radius:8px}
+.qr-desc{font-size:11px;color:#666;line-height:1.8}
+.copyright-note{background:#FFF5F5;border-left:4px solid #C00000;padding:12px 16px;border-radius:0 6px 6px 0;font-size:12px;color:#8B0000;margin-top:12px}
+@media print{
+  .topbar,.result-topbar,.tab-nav,#upload-screen,#select-screen{display:none !important}
+  #result-screen{display:block !important}
+  .tab-content{display:none !important}
+  .tab-content.print-target{display:block !important;padding:0}
+  .tab-content.print-all{display:block !important;padding:0;page-break-before:always}
+  .tab-content.print-all:first-of-type{page-break-before:auto}
+  .print-all-divider{display:block !important;page-break-before:always;height:0}
+  body{background:white}
+  .bcp-doc,.action-card{box-shadow:none}
+  .cards-grid{grid-template-columns:1fr 1fr}
+  .doc-cover,.bcp-table th,.card-header,.chapter-title,.bn-card-head,.facility-btn{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .doc-body{padding:24px 32px}
+  .ref-section{box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="logo">在宅医療BCP支援アプリ</div>
+    <h1>BCP 自動生成アプリ</h1>
+  </div>
+  <div class="ver">v3.0</div>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div id="upload-screen">
+  <div class="upload-card">
+    <div class="upload-card-header">
+      <h2>BCP（業務継続計画）たたき台を<br>自動生成します</h2>
+      <p>「BCP_Template.xlsx」に事業所情報を入力して、このアプリにアップロードしてください。<br>
+      BCP本文（8章構成）・ステージ対応表・アクションカード・スタッフ出勤表・備品リストが生成されます。</p>
+    </div>
+    <div class="upload-card-body">
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-label">Excelに<br>情報入力</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-label">このHTMLを<br>ブラウザで開く</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-label">Excelを<br>アップロード</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-label">BCP文書を<br>確認・印刷</div></div>
+      </div>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="drop-icon">📂</div>
+        <h3>タップしてExcelを選択</h3>
+        <p>BCP_Template.xlsx</p>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls">
+      <div class="file-actions">
+        <button class="btn btn-outline" onclick="loadDemo()">📋 サンプルBCPを見る</button>
+      </div>
+      <div class="security-note">
+        🔒 <strong>プライバシー保護：</strong>アップロードされたデータはお使いのブラウザ内のみで処理されます。サーバーへの送信・外部への情報漏洩は一切ありません。インターネット接続なしでも動作します。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- FACILITY SELECT SCREEN -->
+<div id="select-screen">
+  <div class="select-card">
+    <div class="select-header">
+      <h2>事業所の種別を選択してください</h2>
+      <p>選択内容に応じてBCP文書の内容を最適化します</p>
+    </div>
+    <div class="select-body">
+      <div class="select-note">
+        ⚠️ Excelファイルは読み込み済みです。事業所の種別を選ぶと、BCP文書が自動生成されます。
+      </div>
+      <div class="facility-grid">
+        <button class="facility-btn" onclick="selectFacility('hybrid')" id="btn-hybrid">
+          <div class="facility-icon">🏥🚗</div>
+          <div class="facility-name">外来＋訪問<br>ハイブリッド</div>
+          <div class="facility-desc">外来診療と訪問診療の<br>両方を提供している</div>
+        </button>
+        <button class="facility-btn" onclick="selectFacility('visit_only')" id="btn-visit_only">
+          <div class="facility-icon">🚗</div>
+          <div class="facility-name">訪問専門<br>クリニック</div>
+          <div class="facility-desc">訪問診療のみ提供<br>外来診療なし</div>
+        </button>
+        <button class="facility-btn" onclick="selectFacility('outpatient_only')" id="btn-outpatient_only">
+          <div class="facility-icon">🏥</div>
+          <div class="facility-name">外来専門<br>クリニック</div>
+          <div class="facility-desc">外来診療のみ提供<br>訪問診療なし</div>
+        </button>
+        <button class="facility-btn" onclick="selectFacility('nursing_station')" id="btn-nursing_station">
+          <div class="facility-icon">💉</div>
+          <div class="facility-name">訪問看護<br>ステーション</div>
+          <div class="facility-desc">訪問看護・リハビリを<br>提供している</div>
+        </button>
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-outline btn-sm" onclick="goBackToUpload()">← ファイル選択に戻る</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="result-screen">
+  <div class="result-topbar">
+    <button class="btn btn-outline btn-sm" onclick="goBackToSelect()">← 種別選択に戻る</button>
+    <h2 id="result-clinic-name">BCP文書</h2>
+    <button class="btn btn-red btn-sm" onclick="printCurrent()">🖨️ このタブを印刷/保存</button>
+    <button class="btn btn-sm" style="background:#2E74B5;color:white;font-weight:600;" onclick="printAll()">📄 全タブを印刷/保存</button>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('tab-bcp',this)">📄 BCP本文（8章）</button>
+    <button class="tab-btn" onclick="showTab('tab-stage',this)">📊 ステージ対応表</button>
+    <button class="tab-btn" onclick="showTab('tab-action',this)">🃏 アクションカード</button>
+    <button class="tab-btn" onclick="showTab('tab-location',this)">📍 場所別カード</button>
+    <button class="tab-btn" onclick="showTab('tab-staff',this)">👥 スタッフ出勤表</button>
+    <button class="tab-btn" onclick="showTab('tab-equip',this)">🛒 備品リスト</button>
+  </div>
+  <div id="tab-bcp" class="tab-content active"></div>
+  <div id="tab-stage" class="tab-content"></div>
+  <div id="tab-action" class="tab-content"></div>
+  <div id="tab-location" class="tab-content"></div>
+  <div id="tab-staff" class="tab-content"></div>
+  <div id="tab-equip" class="tab-content"></div>
+</div>
+
+<script>
+// =============================================
+// FILE HANDLING
+// =============================================
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f)});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0])});
+
+function processFile(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result,{type:'binary'});
+      generateBCP(parseExcel(wb));
+    }catch(err){
+      alert('ファイルの読み込みに失敗しました。\nBCP_Template.xlsx を選択してください。\n\nエラー: '+err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+// =============================================
+// EXCEL PARSER  (v2 row map)
+// =============================================
+function parseExcel(wb){
+  const d = {};
+  const ws = wb.Sheets['事業所情報入力'];
+  if(!ws){ alert('"事業所情報入力" シートが見つかりません。'); return d; }
+
+  function g(row, col){
+    const v = ws[XLSX.utils.encode_cell({r:row-1,c:col-1})]?.v;
+    if(v===undefined||v===null) return '';
+    const s = String(v).trim();
+    // Skip placeholder hints
+    if(s.startsWith('例：')||s==='○ or 空欄'||s.startsWith('★')||s.startsWith('※')||s.startsWith('▶')) return '';
+    return s;
+  }
+
+  // ① 基本情報 (rows 4-10, col B=2)
+  d.clinic_name    = g(4,2);
+  d.clinic_short   = g(5,2);
+  d.clinic_address = g(6,2);
+  d.clinic_tel     = g(7,2);
+  d.clinic_fax     = g(8,2);
+  d.clinic_dept    = g(9,2);
+  d.clinic_founded = g(10,2);
+
+  // ② 理念 (row 13, col A=1 ← inp_tall starts at col 1)
+  d.clinic_philosophy = g(13,1);
+
+  // ③ 指揮系統 (rows 19-23, col B=2)
+  d.commander1       = g(19,2);
+  d.commander2       = g(20,2);
+  d.commander3       = g(21,2);
+  d.bcp_sub_leader   = g(22,2);
+  d.bcp_manager      = g(23,2);
+  d.bcp_review_cycle = g(24,2);
+
+  // ④ スタッフ (rows 26-31)
+  d.staff_total   = g(27,2); d.staff_visit   = g(27,4);
+  d.staff_doctor  = g(28,2); d.staff_nurse   = g(28,4);
+  d.staff_lab     = g(29,2); d.staff_admin   = g(29,4);
+  d.staff_other   = g(30,2);
+  d.staff_special = g(31,2);
+  d.staff_receipt = g(32,2); d.receipt_backup = g(32,4);
+
+  // ⑤ サービス (rows 34-36)
+  d.svc_visit        = g(35,2); d.svc_outpatient    = g(35,4);
+  d.svc_checkup      = g(36,2); d.svc_vaccine       = g(36,4);
+  d.svc_occupational = g(37,2); d.svc_online        = g(37,4);
+
+  // ⑥ 患者 (rows 39-41)
+  d.pt_outpatient = g(40,2); d.pt_visit      = g(40,4);
+  d.pt_hot        = g(41,2); d.pt_ventilator = g(41,4);
+  d.pt_suction    = g(42,2); d.pt_dementia   = g(42,4);
+
+  // ⑦ リスク (rows 44-48, col B=2)
+  d.risk_eq        = g(45,2);
+  d.risk_flood     = g(46,2);
+  d.risk_tsunami   = g(47,2);
+  d.risk_landslide = g(48,2);
+  d.risk_power     = g(49,2);
+
+  // ⑧ 連絡手段 (rows 51-54)
+  d.comm_staff    = g(52,2);
+  d.comm_patient  = g(53,2);
+  d.comm_external = g(54,2);
+  d.comm_backup   = g(55,2);
+
+  // ⑨ 連携先 (rows 57-62)
+  d.alt_base             = g(58,2);
+  d.partner_hosp         = g(59,2);
+  d.partner_ns           = g(60,2);
+  d.medical_assoc        = g(61,2);
+  d.substitute_agreement = g(62,2);
+  d.admin_contact        = g(63,2);
+
+  // ⑩ ボトルネック (rows 66-73, col B=2)
+  d.emr_system   = g(67,2);
+  d.emr_backup   = g(68,2);
+  d.paper_record = g(69,2);
+  d.visit_count  = g(70,2);
+  d.breakeven    = g(71,2);
+  d.cash_reserve = g(72,2);
+  d.supply_stock = g(73,2);
+  d.hot_vendor   = g(74,2);
+
+  // ⑪ 備品 (rows 76-80)
+  d.equip_battery       = g(77,2); d.equip_generator    = g(77,4);
+  d.equip_radio         = g(78,2); d.equip_food         = g(78,4);
+  d.equip_water         = g(79,2); d.equip_extinguisher = g(79,4);
+  d.equip_helmet        = g(80,2); d.equip_n95          = g(80,4);
+  d.equip_suction_manual= g(81,2); d.equip_aed          = g(81,4);
+
+  // ⑫ 特記事項 (row 83, col A=1)
+  d.special_notes = g(84,1);
+
+  // スタッフリスト sheet
+  const ws2 = wb.Sheets['スタッフリスト'];
+  d.staff_list = [];
+  if(ws2){
+    for(let r=4;r<=24;r++){
+      const name  = ws2[XLSX.utils.encode_cell({r:r-1,c:1})]?.v||'';
+      const role  = ws2[XLSX.utils.encode_cell({r:r-1,c:2})]?.v||'';
+      const dist  = ws2[XLSX.utils.encode_cell({r:r-1,c:3})]?.v||'';
+      const trans = ws2[XLSX.utils.encode_cell({r:r-1,c:4})]?.v||'';
+      const walk  = ws2[XLSX.utils.encode_cell({r:r-1,c:5})]?.v||'';
+      const note  = ws2[XLSX.utils.encode_cell({r:r-1,c:6})]?.v||'';
+      const ns = String(name).trim();
+      if(ns && !ns.startsWith('例：'))
+        d.staff_list.push({name:ns,role:String(role),dist:String(dist),trans:String(trans),walk:String(walk),note:String(note)});
+    }
+  }
+  return d;
+}
+
+// =============================================
+// DEMO DATA
+// =============================================
+function loadDemo(){
+  _pendingData = {
+    clinic_name:'〇〇内科クリニック', clinic_short:'〇〇クリニック',
+    clinic_address:'〒000-0000 〇〇県〇〇市〇〇1-2-3',
+    clinic_tel:'00-0000-0000', clinic_fax:'00-0000-0001',
+    clinic_dept:'内科・消化器科', clinic_founded:'20〇〇年〇月',
+    clinic_philosophy:'患者一人ひとりの思いを支える医療を提供する。スタッフと患者の命を守ることを最優先にする。有事においても地域医療を途切れさせない。',
+    commander1:'〇〇　〇〇（院長/管理者）', commander2:'〇〇　〇〇（副院長/副管理者）', commander3:'〇〇　〇〇（事務長）', bcp_sub_leader:'〇〇　〇〇（副BCP担当）',
+    bcp_manager:'〇〇　〇〇（看護師長）', bcp_review_cycle:'年1回（毎年〇月）、大規模訓練後',
+    staff_total:'15名', staff_visit:'6名',
+    staff_doctor:'3名', staff_nurse:'5名', staff_lab:'1名', staff_admin:'4名', staff_other:'清掃スタッフ2名',
+    staff_special:'育児中スタッフ2名', staff_receipt:'1名のみ（育成中）', receipt_backup:'レセコン業者に依頼可',
+    svc_visit:'○', svc_outpatient:'○', svc_vaccine:'○',
+    pt_outpatient:'約600名/月', pt_visit:'約30名/月',
+    pt_hot:'5名', pt_ventilator:'1名', pt_suction:'2名', pt_dementia:'10名',
+    risk_eq:'〇〇断層の影響範囲内、最大震度6強想定',
+    risk_flood:'〇〇川の氾濫リスクあり、ハザードマップで浸水想定あり',
+    risk_tsunami:'海岸から〇km、津波浸水想定区域外',
+    risk_landslide:'山間部訪問患者あり、土砂災害警戒区域に患者宅〇件',
+    risk_power:'台風時に過去〇回停電あり（最長〇時間）',
+    comm_staff:'LINEグループ・個人携帯', comm_patient:'電話（固定・携帯）・LINE',
+    comm_external:'電話・FAX', comm_backup:'災害伝言ダイヤル171・トランシーバー',
+    alt_base:'〇〇公民館（院長/管理者と確認済み）',
+    partner_hosp:'〇〇市立病院・△△病院', partner_ns:'〇〇訪問看護ステーション',
+    medical_assoc:'〇〇市医師会',
+    substitute_agreement:'△△クリニックと口頭合意済み（文書化検討中）',
+    admin_contact:'〇〇市保健センター（TEL：00-0000-0000）',
+    emr_system:'〇〇電子カルテ（〇〇社）',
+    emr_backup:'ポータブル電源1台あり（容量要確認）',
+    paper_record:'複写式2号紙を〇〇枚ストック済み',
+    visit_count:'約〇〇件/月', breakeven:'レセプト〇〇件程度',
+    cash_reserve:'約〇ヶ月分', supply_stock:'1週間分確保・業者と緊急供給の確認済み',
+    hot_vendor:'〇〇メディカル（TEL：00-0000-0000）',
+    equip_radio:'○', equip_extinguisher:'○',
+    special_notes:'在宅看取りを積極的に行っており、看取り期患者の安否確認が特に重要。山間部に訪問患者が多く、冬季は積雪による道路封鎖リスクがある。',
+    staff_list:[
+      {name:'A.Y.',role:'医師',dist:'2.5',trans:'車',walk:'',note:'院長/管理者'},
+      {name:'B.T.',role:'医師',dist:'8',trans:'電車',walk:'',note:''},
+      {name:'C.M.',role:'医師',dist:'1.8',trans:'自転車',walk:'○',note:''},
+      {name:'D.K.',role:'看護師',dist:'1.2',trans:'徒歩',walk:'○',note:''},
+      {name:'E.S.',role:'看護師',dist:'3.5',trans:'車',walk:'',note:'育児中'},
+      {name:'F.N.',role:'事務',dist:'0.8',trans:'徒歩',walk:'○',note:'レセプト担当'},
+    ]
+  };
+  _facilityType = 'hybrid';
+  document.querySelectorAll('.facility-btn').forEach(b=>b.classList.remove('selected'));
+  const ab = document.getElementById('btn-hybrid');
+  if(ab) ab.classList.add('selected');
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('select-screen').style.display='block';
+}
+
+// =============================================
+// HELPERS
+// =============================================
+function v(val, fb='（未入力）'){ return (val&&String(val).trim()) ? String(val).trim() : fb; }
+function vc(val){ return val&&String(val).trim() ? String(val).trim() : null; }
+function has(val){ return val&&String(val).trim()!==''; }
+
+// Store parsed data globally for use after facility selection
+let _pendingData = null;
+let _facilityType = 'hybrid';
+
+function generateBCP(d){
+  _pendingData = d;
+  // Auto-detect facility type from Excel data as default selection
+  if(d.svc_visit==='○' && d.svc_outpatient==='○') _facilityType='hybrid';
+  else if(d.svc_visit==='○' && d.svc_outpatient!=='○') _facilityType='visit_only';
+  else if(d.svc_outpatient==='○' && d.svc_visit!=='○') _facilityType='outpatient_only';
+  else _facilityType='hybrid';
+  // Highlight auto-detected button
+  document.querySelectorAll('.facility-btn').forEach(b=>b.classList.remove('selected'));
+  const autoBtn = document.getElementById('btn-'+_facilityType);
+  if(autoBtn) autoBtn.classList.add('selected');
+  // Show selection screen
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('select-screen').style.display='block';
+}
+
+function selectFacility(type){
+  _facilityType = type;
+  document.querySelectorAll('.facility-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('btn-'+type).classList.add('selected');
+  setTimeout(()=>buildBCP(_pendingData, _facilityType), 150);
+}
+
+function buildBCP(d, ftype){
+  const rawName = v(d.clinic_name,'（未入力）');
+  const dispName = (ftype==='nursing_station' && !rawName.includes('訪問看護') && !rawName.includes('ステーション'))
+    ? rawName.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : rawName;
+  document.getElementById('result-clinic-name').textContent = dispName+' BCP文書';
+  try { genBCPMain(d, ftype); } catch(e){ console.error('genBCPMain error:', e); }
+  try { genStageTable(d, ftype); } catch(e){ console.error('genStageTable error:', e); }
+  try { genActionCards(d, ftype); } catch(e){ console.error('genActionCards error:', e); }
+  try { genStaffTable(d, ftype); } catch(e){ console.error('genStaffTable error:', e); }
+  try { genEquipmentList(d, ftype); } catch(e){ console.error('genEquipmentList error:', e); }
+  try { genLocationCards(d, ftype); } catch(e){ console.error('genLocationCards error:', e); }
+  document.getElementById('select-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+}
+
+
+// ── Facility type helpers ──
+function isVisit(ft){ return ft==='hybrid'||ft==='visit_only'||ft==='nursing_station'; }
+function isOutpatient(ft){ return ft==='hybrid'||ft==='outpatient_only'; }
+function isNursing(ft){ return ft==='nursing_station'; }
+function facilityLabel(ft){
+  return {hybrid:'外来・訪問ハイブリッドクリニック', visit_only:'訪問専門クリニック',
+          outpatient_only:'外来専門クリニック', nursing_station:'訪問看護ステーション'}[ft]||'';
+}
+function facilityTerm(ft, term){
+  // Returns facility-appropriate term
+  const map = {
+    us:          {hybrid:'当院', visit_only:'当院', outpatient_only:'当院', nursing_station:'当ステーション'},
+    assoc:       {hybrid:'所属医師会', visit_only:'所属医師会', outpatient_only:'所属医師会', nursing_station:'関連医師会'},
+    cont_med:    {hybrid:'外来診療および訪問診療', visit_only:'訪問診療', outpatient_only:'外来診療', nursing_station:'訪問看護・訪問リハビリ'},
+    partner_org: {hybrid:'近隣の病院・診療所', visit_only:'近隣の病院・診療所', outpatient_only:'近隣の病院・診療所', nursing_station:'近隣の医療機関・訪問看護ST'},
+    chief:       {hybrid:'院長', visit_only:'院長', outpatient_only:'院長', nursing_station:'管理者'},
+    clinic:      {hybrid:'クリニック', visit_only:'クリニック', outpatient_only:'クリニック', nursing_station:'訪問看護ステーション'},
+    facility:    {hybrid:'診療所', visit_only:'診療所', outpatient_only:'診療所', nursing_station:'事業所'},
+    patients:    {hybrid:'患者', visit_only:'患者', outpatient_only:'患者', nursing_station:'利用者'},
+    doctor:      {hybrid:'医師', visit_only:'医師', outpatient_only:'医師', nursing_station:'看護師'},
+    treatment:   {hybrid:'診療', visit_only:'診療', outpatient_only:'診療', nursing_station:'看護・リハビリ'},
+    chart:       {hybrid:'電子カルテ', visit_only:'電子カルテ', outpatient_only:'電子カルテ', nursing_station:'記録システム'},
+  };
+  return (map[term]&&map[term][ft]) || term;
+}
+function facilityTag(ft){
+  return {hybrid:'🏥🚗', visit_only:'🚗', outpatient_only:'🏥', nursing_station:'💉'}[ft]||'';
+}
+// =============================================
+// TAB 1: BCP本文（8章構成）
+// =============================================
+function genBCPMain(d, ftype='hybrid'){
+  const rawName = v(d.clinic_name,'（事業所名）');
+  const name = (ftype==='nursing_station' && !rawName.includes('訪問看護') && !rawName.includes('ステーション'))
+    ? rawName.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : rawName;
+  const dept = v(d.clinic_dept);
+  const services = ['訪問診療','外来診療','健康診断','予防接種','産業医','オンライン診療']
+    .filter((_,i)=>[d.svc_visit,d.svc_outpatient,d.svc_checkup,d.svc_vaccine,d.svc_occupational,d.svc_online][i]==='○')
+    .join('・')||'（未入力）';
+
+  // 理念
+  const philosophy = vc(d.clinic_philosophy)
+    ? d.clinic_philosophy.split(/[。\n]/).filter(s=>s.trim()).map(s=>`<li>${s.trim()}</li>`).join('')
+    : '<li>（未入力）</li>';
+
+  // ボトルネック：訪問診療
+  const bn_visit = `
+    <p><strong>ボトルネック</strong></p>
+    <ul class="policy-list">
+      <li>訪問可能なスタッフと移動手段の確保が最大の課題</li>
+      <li>収入は訪問件数に大きく依存（月間件数：${v(d.visit_count,'約〇〇件')}、損益分岐点目安：${v(d.breakeven,'要確認')}）</li>
+      <li>人工呼吸器・在宅酸素患者の電源確保が生命に直結する問題</li>
+      ${has(d.pt_ventilator)?`<li>人工呼吸器使用患者：${d.pt_ventilator}（在宅酸素業者：${v(d.hot_vendor,'要確認')}）</li>`:''}
+    </ul>
+    <p><strong>代替手段・対応策</strong></p>
+    <ul class="policy-list">
+      <li>スタッフ不足時：代替訪問依頼・訪問回数縮小・オンライン診療活用（代行協定：${v(d.substitute_agreement,'未締結・検討中')}）</li>
+      <li>移動手段確保困難時：自転車・徒歩の活用、カーシェアリングやNPOとの契約検討</li>
+      <li>薬剤・衛生材料の備蓄状況：${v(d.supply_stock,'要確認')}</li>
+      <li>在宅酸素患者：非常用ボンベの設置を業者に依頼。業者（${v(d.hot_vendor,'要確認')}）と停電時の対応を事前協議</li>
+    </ul>`;
+
+  // ボトルネック：電子カルテ・記録
+  const bn_emr = `
+    <p><strong>ボトルネック</strong></p>
+    <ul class="policy-list">
+      <li>使用${facilityTerm(ftype,"chart")}システム：${v(d.emr_system,'未入力')}</li>
+      <li>電子カルテは停電・ネット障害時に使用不能となる</li>
+      <li>有事の対応記録は後日の診療報酬請求・リスクマネジメントに不可欠</li>
+    </ul>
+    <p><strong>代替手段・対応策</strong></p>
+    <ul class="policy-list">
+      <li>停電時の電子カルテ対策：${v(d.emr_backup,'要検討')}</li>
+      <li>紙記録の準備状況：${v(d.paper_record,'要準備')}</li>
+      <li>PC複数台・モバイルバッテリーを平時から整備</li>
+    </ul>`;
+
+  // ボトルネック：請求・財務
+  const bn_finance = `
+    <p><strong>ボトルネック</strong></p>
+    <ul class="policy-list">
+      <li>請求しなければ収入が途絶するため最優先業務</li>
+      <li>レセプト業務担当：${v(d.staff_receipt,'確認必要')} ／ 代替手段：${v(d.receipt_backup,'要検討')}</li>
+      <li>運転資金の確保状況：${v(d.cash_reserve,'要確認')}</li>
+      <li>銀行機能停止・口座振替不能の可能性</li>
+    </ul>
+    <p><strong>対応策</strong></p>
+    <ul class="policy-list">
+      <li>レセプト業務を担えるスタッフを複数育成する（現状：${v(d.staff_receipt,'要確認')}）</li>
+      <li>3ヶ月収入が不十分だった場合のキャッシュフローシミュレーションを行っておく</li>
+      <li>政府系・行政の緊急つなぎ資金・助成金制度を事前把握する</li>
+    </ul>`;
+
+  // スタッフ要配慮
+  const staff_special_note = has(d.staff_special)
+    ? `<p>要配慮スタッフ（${d.staff_special}）については安全確保を最優先とし、出勤を強いない。</p>`
+    : '';
+
+  document.getElementById('tab-bcp').innerHTML = `
+<div class="bcp-doc">
+  <div class="doc-cover">
+    <div class="cover-label">Business Continuity Plan</div>
+    <h1>業務継続計画（BCP）</h1>
+    <div class="clinic-name">${isNursing(ftype)?name.replace('クリニック','').replace('内科','').replace('診療所','')+( name.includes('訪問看護')?'':' 訪問看護ステーション'):name}</div>
+    <div style="font-size:13px;color:#90CAF9;margin-top:-20px;margin-bottom:24px">${facilityTag(ftype)} ${facilityLabel(ftype)}</div>
+    <div class="cover-meta">
+      <span>${isNursing(ftype)?'提供サービス：訪問看護・訪問リハビリ':'診療科：'+dept}</span>
+      <span>作成日：${new Date().toLocaleDateString('ja-JP')}</span>
+      <span>Version 3.0（たたき台）</span>
+    </div>
+  </div>
+  <div class="doc-body">
+    <div class="alert-box">⚠️ <strong>これはBCPのたたき台（自動生成版）です。</strong>スタッフ全員で内容を確認・修正してください。特に地域のハザードマップ確認、スタッフとの合意形成、連携機関との調整が必要です。</div>
+    <div style="background:#F5F8FF;border-left:4px solid #2E74B5;padding:10px 16px;border-radius:0 6px 6px 0;font-size:11px;color:#1F4E79;margin:8px 0;">
+      📌 本BCPは、<a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/infulenza/kenkyu_00001.html" target="_blank" rel="noopener" style="color:#1F4E79;font-weight:600;">厚生労働省「医療施設の災害対応のための事業継続計画（BCP）」</a>等の公的ガイドラインを参考に作成しました。
+    </div>
+
+    <!-- 第1章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第1章　BCP策定の目的と基本方針</div>
+      <div class="section-title">1.1　策定の目的</div>
+      <p>${name}は、${isNursing(ftype)?'訪問看護・訪問リハビリを専門とする訪問看護ステーション':dept+'を専門とする'+facilityLabel(ftype)}として、${isNursing(ftype)?'訪問看護・訪問リハビリ':services}等の形で地域医療を担っている。</p>
+      ${has(d.clinic_philosophy)?`<p>${facilityTerm(ftype,"us")}の理念・基本方針：</p><ul class="policy-list">${philosophy}</ul>`:''}
+      <p>有事においても${facilityTerm(ftype,"cont_med")}を継続できるよう、また万が一中断せざるをえない状況になった場合でも、平時から地域医師会・${facilityTerm(ftype,"partner_org")}等との連携によりサービス提供を継続し、早期復旧を目指すために、ここに業務継続計画（BCP）を策定する。</p>
+      <p>さらには、地域全体でPreventable Disaster Death（PDD：防ぎ得た災害関連死）の阻止に努め、地域包括ケアシステム構築の文脈の中で、周辺の医療介護福祉機関や行政との連携をベースとする「地域BCP」へとつなげていく。</p>
+
+      <div class="section-title">1.2　基本方針</div>
+      <ul class="policy-list">
+        <li>スタッフのいのちと安全を最優先にする</li>
+        <li>${facilityTerm(ftype,"patients")}のいのちと生活を守る${isNursing(ftype)?'看護・リハビリ':' 医療'}提供を途切れさせない</li>
+        <li>地域住民の助けとなる</li>
+        <li>スタッフの権利と意思を尊重する</li>
+      </ul>
+
+      <div class="section-title">1.3　BCP策定・管理体制</div>
+      <table class="bcp-table">
+        <thead><tr><th>役割</th><th>氏名・役職</th><th>主な責務</th></tr></thead>
+        <tbody>
+          <tr><td>BCP統括責任者（第1指揮者）<br><small style="color:#888">${facilityTerm(ftype,"chief")}</small></td><td>${v(d.commander1)}</td><td>BCP発動宣言・全体統括・対外連絡</td></tr>
+          <tr><td>第2指揮者</td><td>${v(d.commander2)}</td><td>第1指揮者不在時の代行</td></tr>
+          <tr><td>第3指揮者</td><td>${v(d.commander3)}</td><td>第2指揮者不在時の代行</td></tr>
+          ${has(d.bcp_sub_leader)?`<tr><td>副BCPリーダー</td><td>${v(d.bcp_sub_leader)}</td><td>BCPリーダー補佐・現場調整</td></tr>`:''}
+          <tr><td>BCP管理担当者</td><td>${v(d.bcp_manager)}</td><td>平時のBCP管理・訓練・見直し主導</td></tr>
+          <tr><td>見直し頻度</td><td colspan="2">${v(d.bcp_review_cycle,'年1回以上')}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 第2章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第2章　${facilityTerm(ftype,"us")}のリスク分析</div>
+      <div class="section-title">2.1　立地・環境特性</div>
+      <table class="bcp-table">
+        <thead><tr><th>リスク種別</th><th>${facilityTerm(ftype,"us")}の状況・特徴</th></tr></thead>
+        <tbody>
+          <tr><td>地震</td><td>${v(d.risk_eq)}</td></tr>
+          <tr><td>洪水・浸水</td><td>${v(d.risk_flood)}</td></tr>
+          <tr><td>津波</td><td>${v(d.risk_tsunami)}</td></tr>
+          <tr><td>土砂災害</td><td>${v(d.risk_landslide)}</td></tr>
+          <tr><td>停電</td><td>${v(d.risk_power)}</td></tr>
+          <tr><td>感染症</td><td>新興感染症流行時はスタッフ・患者への感染リスクがある。訪問診療の特性上、訪問継続可否の判断基準を平時から整備しておく。</td></tr>
+          <tr><td>停電・<br>通信障害</td><td>電子カルテ・医療機器の停止、在宅酸素・人工呼吸器患者への重大な影響。固定電話・FAXのみでは有事に機能しない。ICTの平時からの有事活用ルールを整備しておく。</td></tr>
+          <tr><td>サイバー<br>攻撃</td><td>電子カルテ停止・患者情報漏洩・レセプト送付不能のリスク。定期バックアップ・アクセス管理・外部委託先との対応手順を事前整備しておく。</td></tr>
+          <tr><td>人為的<br>リスク</td><td>交通事故・多数傷病者発生によるスタッフ不足・救急搬送増加・往診依頼急増。近隣医療機関との連携協定を平時から整備しておく。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">2.2　スタッフの出勤可否分析</div>
+      <p>大規模災害時、スタッフが自力で徒歩出勤できるかは距離に依存する。詳細は「スタッフ出勤表」タブを参照。</p>
+      <p>スタッフ合計：${v(d.staff_total)}${isVisit(ftype)?' ／ 訪問スタッフ：'+v(d.staff_visit):''}</p>
+      ${(()=>{
+        const docs = d.staff_list ? d.staff_list.filter(s=>s.role&&s.role.includes('医師')) : [];
+        const farDocs = docs.filter(s=>parseFloat(s.dist)>20);
+        const nearDocs = docs.filter(s=>parseFloat(s.dist)<=20 && parseFloat(s.dist)>0);
+        if(docs.length===0) return '';
+        let txt = '<p>';
+        if(farDocs.length>0) txt += `医師${farDocs.length}名（${farDocs.map(s=>s.name+'：'+s.dist+'km').join('・')}）は遠方在住のため大規模災害時の参集困難が想定される。`;
+        if(nearDocs.length>0) txt += (farDocs.length>0?'一方、':'') + `医師${nearDocs.map(s=>s.name+'（'+s.dist+'km・'+s.trans+'）').join('・')}は${nearDocs[0].dist}km圏内のため、車等で比較的短時間での参集が期待できる。`;
+        txt += '</p>';
+        return txt;
+      })()}
+      ${staff_special_note}
+      <p>※ 徒歩・自転車出勤の目安：概ね4km以内（徒歩約60分・自転車約20分）を「参集可能圏内」と設定する。</p>
+    </div>
+
+    <!-- 第3章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第3章　業務の優先度と継続計画</div>
+      <div class="section-title">3.1　業務の優先度分類</div>
+      <table class="bcp-table">
+        <thead><tr><th>分類</th><th>業務内容</th></tr></thead>
+        <tbody>
+          <tr><th>分類</th><th>業務内容</th><th style="width:100px">復旧目標</th></tr>
+          <tr><td style="background:#FFE0E0;text-align:center;font-weight:700;">優先継続</td><td>人工呼吸器・HOT患者への緊急訪問、患者安否確認（A→B→C→D）、スタッフ安否確認、医薬品・医療資材管理、診療費請求・管理、財務管理、スタッフ労務管理</td><td style="text-align:center">全ステージ<br>中断しない</td></tr>
+          <tr><td style="background:#FFF2CC;text-align:center;font-weight:700;">縮小継続</td><td>定期訪問診療（重症患者優先）、外来診療（緊急患者のみ）、処方・投薬管理、他機関との連携、記録の一部</td><td style="text-align:center">目標：<br>1ヶ月以内</td></tr>
+          <tr><td style="background:#F2F2F2;text-align:center;font-weight:700;">一時停止</td><td>定期健康診断、予防接種（緊急性なし）、スタッフ研修・定例会議、非緊急事務作業、法人内会議・委員会</td><td style="text-align:center">安全確保後<br>速やかに再開</td></tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">3.2　BCPステージングと対応方針</div>
+      <p>被害状況に応じて4つのステージに分け、対応方針を切り替える。詳細は「ステージ対応表」タブを参照。</p>
+    </div>
+
+    <!-- 第4章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第4章　主要業務の継続対策（ボトルネックと代替手段）</div>
+      ${isVisit(ftype)?`<div class="section-title">4.1　訪問診療業務</div>${bn_visit}`:''}
+
+      ${isOutpatient(ftype)?'<div class="section-title">4.2　外来診療業務</div>':''}
+${isOutpatient(ftype)?`<ul class='policy-list'><li><strong>ボトルネック</strong>：診療可能なスタッフ・移動手段の確保、保険証確認の困難（災害時特例措置を事前確認）</li><li><strong>対応策</strong>：スタッフ不足時は電話診療等による定期処方のみ対応。外来継続困難時は近隣医療機関に代診を依頼、または外来休診とする。</li></ul>`:''}
+
+      <div class="section-title">4.3　診療記録・情報管理</div>
+      ${bn_emr}
+
+      <div class="section-title">4.4　通信・情報システム</div>
+      <ul class="policy-list">
+        <li><strong>ボトルネック</strong>：最大のボトルネックは通信手段の確保。固定電話・FAXのみでは有事に機能しない可能性がある。サイバー攻撃による電子カルテ停止・情報漏洩リスクもある。</li>
+        <li><strong>対応策</strong>：ICT（SNS・ショートメール・安否確認アプリ）の有事活用ルールを平時から整備。重要患者データの定期バックアップ実施。電子カルテ停止時は複写式紙カルテへ即時切替。</li>
+        <li>行政とのホットライン（${v(d.admin_contact,'保健センター等')}）を事前確認し、固定電話・FAX以外の連絡先も取得しておく。</li>
+      </ul>
+      <div class="section-title">4.5　請求業務・金銭管理</div>
+      ${bn_finance}
+
+      <div class="section-title">4.6　薬剤・衛生材料の確保</div>
+      <ul class="policy-list">
+        <li>備蓄状況：${v(d.supply_stock,'要確認')}</li>
+        <li>平時から1週間分多めの処方を行い、非常用持ち出し袋への収納を患者に促す</li>
+        <li>処方変更時には持ち出し袋のストックも更新するよう患者・関係職種に周知する</li>
+      </ul>
+
+      <div class="section-title">4.7　スタッフのメンタルヘルスと労務管理</div>
+      <ul class="policy-list">
+        <li>有事体制スタート後1週間を目安に、個別面談など「吐き出せる場」を設ける</li>
+        <li>特定の人物に業務・意思決定の負荷が集中しないよう、休息と交代の仕組みを決めておく</li>
+        <li>要配慮スタッフ（${v(d.staff_special,'確認必要')}）の安全確保を最優先とし、出勤を強いない</li>
+        <li>SNS疲れに注意し、情報共有ルール（主要連絡手段：${v(d.comm_staff)}）を事前に確立する</li>
+      </ul>
+    </div>
+
+    <!-- 第5章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第5章　患者への対応方針</div>
+      <div class="section-title">5.1　安否確認体制</div>
+      <table class="bcp-table">
+        <thead><tr><th>優先度</th><th>対象患者</th><th>主な確認方法</th></tr></thead>
+        <tbody>
+          ${isVisit(ftype)?`<tr><td style='text-align:center;font-weight:700;background:#FFE0E0;'>A（最優先）</td><td>人工呼吸器（${v(d.pt_ventilator,'―')}）・在宅酸素（${v(d.pt_hot,'―')}）使用患者</td><td>${v(d.comm_patient,'電話')}・安否確認アプリ → 訪問</td></tr>`:''}
+          ${isVisit(ftype)?`<tr><td style='text-align:center;font-weight:700;background:#FFF2CC;'>B</td><td>吸引機使用（${v(d.pt_suction,'―')}）・認知症（${v(d.pt_dementia,'―')}）・独居高齢者</td><td>${v(d.comm_patient,'電話')}・安否確認アプリ → 訪問</td></tr>`:''}
+          ${isVisit(ftype)?`<tr><td style='text-align:center;font-weight:700;background:#DEEAF1;'>C</td><td>その他の訪問患者（合計：${v(d.pt_visit,'―')}）</td><td>電話・安否確認アプリ</td></tr>`:''}
+          ${isOutpatient(ftype)?`<tr><td style='text-align:center;font-weight:700;background:#F2F2F2;'>${isVisit(ftype)?'D':'A'}</td><td>外来患者（合計：${v(d.pt_outpatient,'―')}）</td><td>掲示・SNS・安否確認アプリ</td></tr>`:''}
+        </tbody>
+      </table>
+
+      ${isVisit(ftype)?'<div class="section-title">5.2　要配慮患者（人工呼吸器・在宅酸素）</div>':''}
+      ${isVisit(ftype)?`<ul class='policy-list'>
+        <li>非常用電源（バッテリー・発電機・車両電源）の確保を患者ごとに検討</li>
+        <li>在宅酸素業者（${v(d.hot_vendor,'要確認')}）と停電時の対応を事前協議する</li>
+        <li>福祉避難所での緊急ショートステイの可能性を平時から開拓する</li>
+        <li>行政（${v(d.admin_contact,'要確認')}）も交えた電源確保対策を立てておく</li></ul>`:''}"
+
+
+      <div class="section-title">5.3　薬剤・衛生材料の確保</div>
+      <ul class="policy-list">
+        <li>平時から1週間分多めの処方を行い、非常用持ち出し袋への収納を促す</li>
+        <li>誕生日月に最低年1回、非常用持ち出し袋の薬を確認する</li>
+      </ul>
+
+      <div class="section-title">5.4　個別避難支援</div>
+      <ul class="policy-list">
+        <li>各患者の個別避難支援計画を確認・未策定の場合は立案を支援する</li>
+        <li>初回訪問時に患者宅のハザードマップ確認・避難場所・移動方法をルーティン化する</li>
+      </ul>
+
+      <div class="section-title">5.5　ポジションペーパーの準備</div>
+      <p>有事の際に患者・家族・関係機関に向けて${facilityTerm(ftype,"us")}の状況と方針を速やかに発信できるよう、「ポジションペーパー」のひな形を平時から準備しておく。</p>
+    </div>
+
+    <!-- 第6章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第6章　他機関との連携体制</div>
+      <div class="section-title">6.1　代行${isNursing(ftype)?'看護':' 訪問'}協定</div>
+      <p>診療提供が困難になった場合に備え、平時から近隣医療機関との支援協定を締結しておく。</p>
+      <p>現在の状況：${v(d.substitute_agreement,'未締結・今年度中に検討')}</p>
+      <p>後方支援病院・施設：${v(d.partner_hosp)} ／ 連携訪問看護ST：${v(d.partner_ns)}</p>
+
+      <div class="section-title">6.2　行政・職能団体との連携</div>
+      <ul class="policy-list">
+        <li>行政担当窓口：${v(d.admin_contact,'要確認')}</li>
+        <li>${facilityTerm(ftype,"assoc")}：${v(d.medical_assoc)}</li>
+        <li>安否確認ができない患者の情報を行政と共有するタイミング・方法について事前協議する</li>
+        <li>通信維持のために、有事でも連絡可能な機関のリストを作成し、固定電話・FAX以外の連絡先も取得しておく</li>
+      </ul>
+
+      <div class="section-title">6.3　地域BCP（地域全体での連携）</div>
+      <ul class="policy-list">
+        <li>${v(d.medical_assoc,"関連医師会")}を通じた地域BCP体制構築への参加</li>
+        <li>医療・介護・福祉機関・行政とのICT連携（有事の運用ルールを平時から整備）</li>
+        <li>地域全体でのPDD（防ぎ得た災害関連死）ゼロを目指す</li>
+      </ul>
+    </div>
+
+    <!-- 第7章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第7章　平時からの備え（アクションリスト）</div>
+      <table class="bcp-table">
+        <thead><tr><th>No.</th><th>項目</th><th>担当</th><th>期限目安</th><th>状況</th></tr></thead>
+        <tbody>
+          ${[
+            ['スタッフ全員でBCPを読み合わせ・合意形成','BCP管理担当','1ヶ月以内'],
+            ['患者安否確認リストを作成・最新化（A〜D優先度付き）','訪問担当','1ヶ月以内'],
+            ['代行訪問協定を近隣医療機関と締結',facilityTerm(ftype,'chief'),'3ヶ月以内'],
+            ['電子カルテの停電対策を確認・整備','事務','2ヶ月以内'],
+            ['紙記録（複写式2号紙等）を準備','事務','1ヶ月以内'],
+            ['スタッフ全員分のモバイルバッテリー・ヘルメットを購入','事務','1ヶ月以内'],
+            ['3日分の食料・飲料水を確保','事務','2ヶ月以内'],
+            ['在宅酸素・人工呼吸器患者に非常用電源対策を個別相談','訪問担当','2ヶ月以内'],
+            ['災害時の連絡手段（'+v(d.comm_backup,'代替手段')+'）を全スタッフが使える状態に','BCP管理担当','2ヶ月以内'],
+            ['代替'+facilityTerm(ftype,'facility')+'（'+v(d.alt_base,'候補地')+'）を確認・契約',facilityTerm(ftype,'chief'),'3ヶ月以内'],
+            ['行政・医師会との連携ルートを確認（'+v(d.admin_contact,'保健センター等')+'）',facilityTerm(ftype,'chief'),'3ヶ月以内'],
+            ['レセプト業務の多能工化（担当：'+v(d.staff_receipt,'現状確認')+'）','事務長','6ヶ月以内'],
+            ['BCPの年次見直し・訓練計画を立案','BCP管理担当','6ヶ月以内'],
+            ['電子カルテ・重要データの定期バックアップ体制を整備','事務','3ヶ月以内'],
+            ['サイバー攻撃・通信障害時のオフライン診療手順をスタッフと確認','BCP管理担当','3ヶ月以内'],
+          ].map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>□ 未着手</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 第8章 -->
+    <div class="doc-chapter">
+      <div class="chapter-title">第8章　BCP発動手順（初動フロー）</div>
+      <table class="bcp-table">
+        <thead><tr><th>ステップ</th><th>アクション</th><th>担当</th><th>手段</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:center;font-weight:700;">1</td><td>自身・家族・患者の安全確保（アクションカードに従って行動）</td><td>全スタッフ</td><td>各自判断</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">2</td><td>診療所・スタッフの被害状況確認</td><td>${v(d.commander1,'第1指揮者')}</td><td>${v(d.comm_staff,'LINE等')}</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">3</td><td>スタッフ安否確認・参集可能人数の把握</td><td>${v(d.commander1,'第1指揮者')}</td><td>${v(d.comm_staff,'LINE等')}</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">4</td><td>BCP発動宣言・ステージ判定（1〜4）</td><td>${v(d.commander1,'第1指揮者')}</td><td>全スタッフへ周知</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">5</td><td>患者安否確認開始（優先度A→B→C→D順）</td><td>全出勤スタッフ</td><td>${v(d.comm_patient,'電話等')}・<strong>安否確認アプリ</strong></td></tr>
+          <tr><td style="text-align:center;font-weight:700;">6</td><td>医療機器使用患者（人工呼吸器・HOT）への緊急訪問調整</td><td>訪問担当</td><td>バディ（2人組）で行動</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">7</td><td>${v(d.medical_assoc,'医師会')}・行政（${v(d.admin_contact,'保健センター等')}）へ状況報告</td><td>${v(d.commander1,'第1指揮者')}</td><td>${v(d.comm_external,'電話・FAX')}</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">8</td><td>連携機関（${v(d.partner_hosp,'連携病院')}）へ患者受入等の調整</td><td>${v(d.commander1,'第1指揮者')}</td><td>${v(d.comm_external,'電話・FAX')}</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">9</td><td>ステージに応じた業務縮小・再開計画の策定</td><td>全スタッフで協議</td><td>定期ミーティング</td></tr>
+          <tr><td style="text-align:center;font-weight:700;">10</td><td>ステージ4（診療中断）の場合：保健所への診療休止届出</td><td>${v(d.commander1,'第1指揮者')}</td><td>電話・書面（${v(d.admin_contact,'保健センター等')}）</td></tr>
+        </tbody>
+      </table>
+
+      <table class="bcp-table" style="margin-top:16px">
+        <thead><tr><th colspan="2">改訂履歴</th></tr><tr><th>日付</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>${new Date().toLocaleDateString('ja-JP')}</td><td>BCP自動生成アプリ v3 により初版作成（たたき台）</td></tr>
+          <tr><td></td><td></td></tr>
+          <tr><td></td><td></td></tr>
+        </tbody>
+      </table>
+      ${has(d.special_notes)?`<div class="info-box" style="margin-top:16px;">💡 <strong>${facilityTerm(ftype,"us")}の特記事項：</strong>${d.special_notes}</div>`:''}
+    </div>
+  </div>
+
+  <!-- 巻末参考資料 -->
+  <div class="ref-section">
+    <div class="ref-header">
+      <h2>巻末資料　参考・関連資料</h2>
+      <p>本BCPたたき台の作成にあたり参考にした資料・動画です。スタッフ研修や見直しの際にもご活用ください。</p>
+    </div>
+    <div class="ref-body">
+
+      <div class="ref-item" style="border-color:#1F4E79;background:#F0F4FF;">
+        <h3>🏛️ 参考資料0　厚生労働省　医療施設の災害対応のための事業継続計画（BCP）</h3>
+        <div class="ref-meta">
+          <span class="label">掲載元</span><span class="val">厚生労働省（公式ページ）</span>
+          <span class="label">収録内容</span><span class="val">BCP作成の手引き・BCP策定手順と見直しのポイント（策定編・訓練編）・BCP作成指針・チェックリスト等</span>
+        </div>
+        <div class="ref-url">
+          <a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/infulenza/kenkyu_00001.html" target="_blank" rel="noopener">
+            https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/infulenza/kenkyu_00001.html
+          </a>
+        </div>
+        <div class="qr-wrapper">
+          <div class="qr-box" id="qr-mhlw"></div>
+          <div class="qr-desc">
+            左のQRコードをスマートフォンのカメラで読み取ると厚労省BCPページにアクセスできます。<br><br>
+            <strong>主な掲載資料：</strong><br>
+            ・医療機関（災害拠点病院以外）におけるBCP作成の手引き<br>
+            ・令和6年度 BCP策定手順と見直しのポイント（策定編・訓練編）<br>
+            ・病院BCPを策定するための手引き（改訂第2版）
+          </div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <h3>📹 参考資料1　J-SPEED 意義・運用概論（YouTube動画）</h3>
+        <div class="ref-meta">
+          <span class="label">内容</span><span class="val">J-SPEED（災害診療記録）の意義・運用概論。有事に備えたスタッフ研修に活用ください。</span>
+          <span class="label">形式</span><span class="val">YouTube動画</span>
+        </div>
+        <div class="ref-url">
+          <a href="https://youtu.be/j6CzX-c_mRo?si=HghQAaxhU32BL6-N" target="_blank" rel="noopener">
+            https://youtu.be/j6CzX-c_mRo?si=HghQAaxhU32BL6-N
+          </a>
+        </div>
+        <div class="qr-wrapper">
+          <div class="qr-box" id="qr-youtube"></div>
+          <div class="qr-desc">
+            左のQRコードをスマートフォンのカメラで読み取ると動画にアクセスできます。<br>
+            スタッフ研修・勉強会でのスクリーン投影や、印刷して掲示することを推奨します。<br><br>
+            <strong>視聴推奨対象：</strong>全スタッフ（特に訪問診療スタッフ・記録担当者）<br>広島県災害診療記録/J-SPEED運用促進事業成果動画
+          </div>
+        </div>
+      </div>
+
+      <div class="ref-item">
+        <h3>📋 参考資料2　災害診療記録（J-SPEED 2018）一般診療版</h3>
+        <div class="ref-meta">
+          <span class="label">書式名</span><span class="val">災害診療記録2018　一般診療版　J-SPEED2018（A3両面印刷）</span>
+          <span class="label">用途</span><span class="val">有事の際の診療記録・患者情報の記録（電子カルテ停止時の代替）</span>
+        </div>
+        <p style="font-size:12px;color:#333;line-height:1.8;margin-bottom:8px">
+          J-SPEED（Japan Standard for Primary care in Emergencies and Disasters）は、災害時の診療記録を標準化するための書式です。
+          患者基本情報・バイタルサイン・既往歴・診断・処置・転帰を一枚で記録でき、電子カルテが使えない状況での代替記録として活用します。
+平時に印刷し事業所に保管することを推奨します。
+        </p>
+        <div class="ref-meta" style="margin-top:12px;">
+          <span class="label">公式サイト</span>
+          <span class="val"><a href="https://www.j-speed.org/" target="_blank" rel="noopener" style="color:#1F4E79;font-weight:600;">https://www.j-speed.org/</a>（様式・運用手順・教育資料を入手できます）</span>
+          <span class="label">様式PDF</span>
+          <span class="val"><a href="https://www.dpat.jp/images/j-speed/2018/%E2%91%A0%E7%81%BD%E5%AE%B3%E8%A8%BA%E7%99%82%E8%A8%98%E9%8C%B22018%EF%BC%88%E4%B8%80%E8%88%AC%E8%A8%BA%E7%99%82%E7%89%88%EF%BC%89.pdf" target="_blank" rel="noopener" style="color:#1F4E79;font-weight:600;text-decoration:underline;">📄 災害診療記録2018（一般診療版）PDFを開く ↗</a></span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>`;
+
+// Generate QR code after DOM is ready
+setTimeout(() => {
+  const qrEl = document.getElementById('qr-youtube');
+  if (qrEl && typeof QRCode !== 'undefined') {
+    new QRCode(qrEl, {
+      text: 'https://youtu.be/j6CzX-c_mRo?si=HghQAaxhU32BL6-N',
+      width: 128, height: 128,
+      colorDark: '#1F4E79', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+  const qrMhlw = document.getElementById('qr-mhlw');
+  if (qrMhlw && typeof QRCode !== 'undefined') {
+    new QRCode(qrMhlw, {
+      text: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/infulenza/kenkyu_00001.html',
+      width: 128, height: 128,
+      colorDark: '#1F4E79', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+  }
+}, 300);
+}
+
+// =============================================
+// TAB 2: ステージ対応表
+// =============================================
+function genStageTable(d, ftype='hybrid'){
+  const _rn = v(d.clinic_name,'');
+  const name = (ftype==='nursing_station' && !_rn.includes('訪問看護') && !_rn.includes('ステーション'))
+    ? _rn.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : _rn;
+  const comm = v(d.comm_staff,'LINE・個人携帯');
+  const cmd1 = v(d.commander1,'第1指揮者');
+
+  document.getElementById('tab-stage').innerHTML = `
+<div class="bcp-doc">
+  <div style="padding:20px 32px;background:var(--navy);color:white;">
+    <h2 style="font-size:16px;">ステージ対応表 ｜ ${name}</h2>
+    <p style="font-size:12px;opacity:.8;margin-top:4px;">被害状況に応じて4段階のステージを設定し、各段階での対応を切り替えます。</p>
+  </div>
+  <div style="padding:24px 32px;">
+    <table class="bcp-table">
+      <thead>
+        <tr><th style="width:80px">ステージ</th><th>発動条件</th><th>スタッフ状況</th><th>基本方針</th><th>主なアクション</th></tr>
+      </thead>
+      <tbody>
+        <tr class="stage-1">
+          <td style="text-align:center;font-weight:700;">🔴<br>ステージ1</td>
+          <td>大規模災害発生直後・被害状況不明</td>
+          <td>1〜2割が参集困難</td>
+          <td>BCP発動宣言<br>安否確認開始<br>優先業務に集中</td>
+          <td>①${cmd1}がBCP発動宣言<br>②スタッフ安否確認（${comm}）<br>③患者安否確認（A→B→C順）<br>④施設の被害状況確認<br>⑤${v(d.medical_assoc,'医師会')}・行政へ報告</td>
+        </tr>
+        <tr class="stage-2">
+          <td style="text-align:center;font-weight:700;">🟡<br>ステージ2</td>
+          <td>被害状況判明・交通・通信に支障</td>
+          <td>2〜4割が参集困難</td>
+          <td>優先業務のみ継続<br>縮小運営</td>
+          <td>${isVisit(ftype)?'①訪問は人工呼吸器・HOT患者最優先<br>':''}${isOutpatient(ftype)?'②外来は重症・緊急患者のみ<br>':''}③バディ（2人組）での行動徹底<br>④朝・夕の定期報告実施<br>⑤連携施設と患者受入を協議</td>
+        </tr>
+        <tr class="stage-3">
+          <td style="text-align:center;font-weight:700;">🔵<br>ステージ3</td>
+          <td>被害が広範囲・インフラに重大な支障</td>
+          <td>5〜7割が参集困難</td>
+          <td>最低限の業務のみ<br>外部支援を要請</td>
+          <td>①人工呼吸器・HOT患者のみ対応<br>②${v(d.partner_hosp,'連携病院')}への移送調整<br>③代替拠点（${v(d.alt_base,'候補地')}）の活用検討<br>④自衛隊・医師会支援チームと連携</td>
+        </tr>
+        <tr class="stage-4">
+          <td style="text-align:center;font-weight:700;">⚫<br>ステージ4</td>
+          <td>復旧の見通しなし・施設使用不能</td>
+          <td>8割以上が参集困難</td>
+          <td>診療を一時中断<br>患者を他機関へ移管</td>
+          <td>①全患者を${v(d.partner_hosp,'連携病院・施設')}へ移管<br>②${v(d.medical_assoc,'医師会')}・行政に支援要請<br>③患者家族・ケアマネへ連絡<br>④保健所へ診療休止の届出<br>⑤再開の見通しをスタッフへ随時周知</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:24px;color:var(--navy);font-size:14px;">業務優先度分類</h3>
+    <table class="bcp-table" style="margin-top:12px">
+      <thead><tr><th>分類</th><th>業務内容</th><th>対応ステージ</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center;background:#FFE0E0;font-weight:700;">優先継続</td><td>${isVisit(ftype)?'人工呼吸器・HOT患者への緊急訪問、':''}患者安否確認、スタッフ安否確認、医薬品管理、診療費請求・管理</td><td style="text-align:center">全ステージ</td></tr>
+        <tr><td style="text-align:center;background:#FFF2CC;font-weight:700;">縮小継続</td><td>${isVisit(ftype)?'定期訪問（重症患者優先）、':''}${isOutpatient(ftype)?'外来診療（緊急のみ）、':''}処方・投薬管理</td><td style="text-align:center">ステージ1〜2</td></tr>
+        <tr><td style="text-align:center;background:#F2F2F2;font-weight:700;">一時停止</td><td>定期健康診断、予防接種（緊急性なし）、スタッフ研修・会議、非緊急事務作業</td><td style="text-align:center">ステージ3以降</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>`;
+}
+
+// =============================================
+// TAB 3: アクションカード
+// =============================================
+function genActionCards(d, ftype='hybrid'){
+  const _rn = v(d.clinic_name,'');
+  const name = (ftype==='nursing_station' && !_rn.includes('訪問看護') && !_rn.includes('ステーション'))
+    ? _rn.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : _rn;
+  const comm = v(d.comm_staff,'LINE・個人携帯');
+  const cmd1 = v(d.commander1,'第1指揮者');
+
+  const cards = [
+    { title:'🔴 地震・津波　発災直後', color:'#C00000', visitOnly:false,
+      rule:'★ 自らの安全確保が最優先　｜　行動後は診療所または代替拠点へ帰所',
+      sections:[
+        ...(isVisit(ftype)?[{t:'訪問先にいる場合', items:['自身の安全確保（頭を守る・机の下等）','患者・同居家族の安全確保','避難出口の確保','医療機器をバッテリーに切替','津波リスクあり→揺れが収まったら直ちに高台へ','ガス・ブレーカーを切る',facilityTerm(ftype,'facility')+'に状況を報告（'+comm+'）']}]:[]),
+        {t:facilityTerm(ftype,'facility')+'にいる場合', items:['自身の安全確保','避難出口の確保','津波リスクあり→上階・高台へ避難','ガス・ブレーカーを切る','スタッフ安否確認（'+comm+'）','患者安否確認を開始（A→B→C順）',cmd1+'がステージを宣言']},
+        ...(isVisit(ftype)?[{t:'移動中（車内）の場合', items:['安全な場所に停車','津波リスクあり→車を捨てて高台へ',facilityTerm(ftype,'facility')+'へ現在地・状況を報告','通信不可なら安全確認後に'+facilityTerm(ftype,'facility')+'へ直行']}]:[]),
+        {t:'自宅にいる場合', items:['自身・家族の安全確保','ガス・ブレーカーを切る','LINEで'+facilityTerm(ftype,'facility')+'に安否を報告','参集指示に従って行動','※夜間の移動は原則禁止']},
+      ]
+    },
+    { title:'🟠 火災　発見直後', color:'#E36C0A',
+      rule:'★ 通報 → 初期消火（天井到達前のみ） → 避難',
+      sections:[
+        {t:'STEP1 通報', items:['"火事だ！"と大声で叫ぶ','119番通報','院内ベルを鳴らす・隣近所に知らせる']},
+        {t:'STEP2 初期消火（天井到達前のみ）', items:['消火器：安全ピン→ノズルを火元へ→レバーを握る','炎が天井に達したら直ちに中断し避難']},
+        {t:'STEP3 避難', items:['燃えている部屋の窓・ドアを閉め空気を遮断','患者・スタッフを屋外へ誘導','濡れタオルで口・鼻をふさぎ姿勢を低くする','外に出たら絶対に戻らない','取り残された人がいたら消防隊に伝える']},
+      ]
+    },
+    { title:'🔵 風水害　警戒レベル別', color:'#0070C0',
+      rule:'★ 警戒レベルに応じて段階的に対応（情報収集先：小田原ライフビジョン等）',
+      sections:[
+        {t:'Lv.2 早期注意情報', items:['気象情報を継続収集','スタッフの出退勤・シフトを調整','車にガソリンを満タンに補充']},
+        ...(isVisit(ftype)?[{t:'Lv.3 高齢者等避難', items:['移動困難な患者へ避難を喚起（2人で訪問）','バディ（2人組）で行動','訪問ルートの安全を確認']}]:[]),
+        {t:'Lv.4 避難指示', items:['訪問をキャンセル・電話/オンライン診療へ切替','スタッフは自宅待機または避難所へ','患者の避難状況を電話確認']},
+        {t:'Lv.5 緊急安全確保', items:['命を守る行動を最優先','その場で建物上階へ垂直避難']},
+      ]
+    },
+    { title:'⚫ 停電　発生時', color:'#404040',
+      rule:'★ 医療機器患者への対応が最優先',
+      sections:[
+        {t:'医療機器患者（最優先）', items:['人工呼吸器→内部バッテリーに切替確認','HOT→非常用ボンベへ切替・残量確認（業者：'+v(d.hot_vendor,'要確認')+'）','吸引機→バッテリー確認・手動式の準備','バッテリー残量を'+facilityTerm(ftype,'facility')+'に報告']},
+        {t:facilityTerm(ftype,'facility')+'の対応', items:['停電エリアと復旧見通しを確認','ブレーカーを上げコンセントを抜く（復電時の機器故障・火災防止）',facilityTerm(ftype,'chart')+'停止→'+v(d.emr_backup,'代替手段')+'・紙記録へ切替','保健センターへ人工呼吸器患者の状況を報告']},
+        {t:'長期化する場合', items:['近隣医療機関への患者受入を調整','行政・医師会（'+v(d.medical_assoc,'―')+'）に支援を要請','発電機（カセット式）を起動']},
+      ]
+    },
+    { title:'🟡 感染症　対応', color:'#7F6000',
+      rule:'★ 予防期・発生期・流行期の3段階で対応',
+      sections:[
+        {t:'予防期（平時）', items:['手洗い・マスク・換気の標準予防策','PPEのローリングストックを定期確認','感染リスクの高い患者対応スタッフを事前に決める']},
+        {t:'発生期', items:['会話時マスク必須・2点換気を常時実施','接触ケアあり→ガウン着用','接触感染リスク患者は訪問を最後に回す','体調不良のスタッフは即座に報告']},
+        {t:'流行期', items:['スタッフを2チームに分け交互勤務','空気感染リスク→N95マスク着用','状態安定患者はオンライン診療へ積極的に切替','感染者対応は期間限定で交代制に（特定の人に偏らせない）']},
+      ]
+    },
+    { title:'👥 スタッフ参集・安否確認', color:'#1F4E79', visitOnly:false,
+      rule:'★ 連絡手段優先順位：'+comm+'・安否確認アプリ → 災害伝言ダイヤル171',
+      sections:[
+        {t:'参集基準（地震の場合）', items:['震度5強以上→自動参集','震度5弱以下・停電→オンライン参集','通信不通→徒歩・自転車圏内スタッフのみ自主参集','夜間の移動は原則禁止（夜明けを待つ）']},
+        {t:'安否確認の手順', items:['①LINEグループで一斉送信','②未応答者には個人携帯に電話','③連絡取れない場合はバディで自宅を確認（日中のみ）','④参集可能人数を'+cmd1+'に報告']},
+        {t:'帰宅困難時', items:['3日分の食料・水を'+facilityTerm(ftype,'facility')+'で確保（備蓄：'+( has(d.equip_food)?'あり':'要準備')+'）',facilityTerm(ftype,'facility')+'または近隣の避難所で待機','翌朝を待って安全確認後に移動']},
+      ]
+    },
+  ];
+
+  // Filter cards by facility type
+  const filteredCards = cards.filter(card => {
+    if(card.visitOnly && !isVisit(ftype)) return false;
+    if(card.outpatientOnly && !isOutpatient(ftype)) return false;
+    return true;
+  });
+  const cardsHTML = filteredCards.map(card => `
+    <div class="action-card" style="border-top:4px solid ${card.color}">
+      <div class="card-header" style="background:${card.color}">${card.title}</div>
+      <div class="card-body">
+        <div class="card-rule">${card.rule}</div>
+        ${card.sections.map(s=>`
+          <div class="card-section-title" style="background:${card.color}">${s.t}</div>
+          ${s.items.map(item=>`<div class="card-item">${item}</div>`).join('')}
+        `).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('tab-action').innerHTML = `
+<div style="background:white;border-radius:8px;padding:20px 32px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <h2 style="color:var(--navy);font-size:16px;margin-bottom:4px">アクションカード ｜ ${name}</h2>
+  <p style="font-size:12px;color:#666">印刷して各スタッフに配布・携帯してください。Ctrl+P（Cmd+P）で印刷できます。</p>
+</div>
+<div class="cards-grid">${cardsHTML}</div>`;
+}
+
+// =============================================
+// TAB 4: スタッフ出勤表
+// =============================================
+function genStaffTable(d, ftype='hybrid'){
+  const _rn = v(d.clinic_name,'');
+  const name = (ftype==='nursing_station' && !_rn.includes('訪問看護') && !_rn.includes('ステーション'))
+    ? _rn.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : _rn;
+  const rows = d.staff_list && d.staff_list.length > 0
+    ? d.staff_list.map((s,i)=>{
+        const dist = parseFloat(s.dist)||0;
+        const walkable = s.walk==='○'||dist<=2;
+        const avail = dist<=1?'◎ 徒歩10分以内':dist<=4?'○ 徒歩・自転車圏内(〜4km)':dist<=8?'△ 自転車・車で対応(〜8km)':'▲ 要交通手段';
+        const color = dist<=2?'#2E8B57':dist<=5?'#E36C0A':'#888';
+        return `<tr>
+          <td style="text-align:center">${i+1}</td>
+          <td style="font-weight:600">${s.name}</td>
+          <td style="text-align:center">${s.role}</td>
+          <td style="text-align:center">${s.dist?s.dist+'km':'―'}</td>
+          <td style="text-align:center">${s.trans}</td>
+          <td style="text-align:center;font-weight:600;color:${color}">${avail}</td>
+          <td style="font-size:10px;color:#666">${s.note}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" style="text-align:center;color:#888;padding:24px">スタッフリストが未入力です。Excelの「スタッフリスト」シートに入力してください。</td></tr>`;
+
+  document.getElementById('tab-staff').innerHTML = `
+<div class="bcp-doc">
+  <div style="padding:20px 32px;background:var(--navy);color:white">
+    <h2 style="font-size:16px">大規模災害時　スタッフ出勤可否表 ｜ ${name}</h2>
+  </div>
+  <div style="padding:24px 32px">
+    <table class="bcp-table">
+      <thead><tr><th>No.</th><th>氏名</th><th>職種</th><th>通勤距離</th><th>通勤手段</th><th>災害時参集可否</th><th>備考</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:11px;color:#888;margin-top:12px">◎：徒歩10分以内（〜1km）　○：徒歩・自転車圏内（〜4km）　△：自転車・車で対応（〜8km）　▲：要交通手段</p>
+    ${has(d.staff_special)?`<div class="info-box" style="margin-top:12px">⚠️ <strong>要配慮スタッフ：</strong>${d.staff_special}　→ 安全確保を最優先とし出勤を強いない</div>`:''}
+  </div>
+</div>`;
+}
+
+// =============================================
+// TAB 5: 備品リスト
+// =============================================
+function genEquipmentList(d, ftype='hybrid'){
+  const _rn = v(d.clinic_name,'');
+  const name = (ftype==='nursing_station' && !_rn.includes('訪問看護') && !_rn.includes('ステーション'))
+    ? _rn.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+    : _rn;
+
+  // 既存備品チェック
+  const owned = {
+    battery:d.equip_battery==='○', generator:d.equip_generator==='○',
+    radio:d.equip_radio==='○', food:d.equip_food==='○',
+    water:d.equip_water==='○', extinguisher:d.equip_extinguisher==='○',
+    helmet:d.equip_helmet==='○', n95:d.equip_n95==='○',
+    suction_manual:d.equip_suction_manual==='○', aed:d.equip_aed==='○',
+  };
+
+  const items = [
+    ['A','非常用電源・照明','ポータブル電源（1000Wh以上）','在宅酸素・吸引機・電子カルテPCへの非常用電力供給','2台','約8万円/台',owned.battery,'Jackery等。往診車用1台含む。ソーラーパネルとセットで購入推奨'],
+    ['A','非常用電源・照明','モバイルバッテリー（20000mAh以上）','スタッフ全員分のスマホ充電用','全スタッフ分+3個','約4,000円/個',false,'常に充電済み状態で保管。'+v(d.staff_total,'スタッフ数')+'＋3個'],
+    ['A','非常用電源・照明','LED充電式ランタン','停電時の院内照明','6個','約3,500円/個',false,'各部屋に1個配置'],
+    ['A','非常用電源・照明','ヘッドライト（LED）','夜間訪問・個人照明。両手が使える','全スタッフ分','約2,000円/個',owned.helmet,'ヘルメットに取付可能なタイプが便利'],
+    ['A','通信・情報','防災ラジオ（手回し充電対応）','停電・通信障害時の情報収集','3台','約5,000円/台',owned.radio,'AM受信必須。往診車にも1台'],
+    ['A','医療・衛生資材','N95マスク','感染症流行期のスタッフ保護・エアロゾル処置時','200枚','約200円/枚',owned.n95,'使用期限に注意。ローリングストック管理'],
+    ['A','医療・衛生資材','手動式吸引器','停電時に電動吸引器が使えない患者への対応','3台','約15,000円/台',owned.suction_manual,'平時から操作練習を実施'],
+    ['A','スタッフ安全','ヘルメット（折りたたみ式）','地震時の落下物から頭部を保護','全スタッフ分+3個','約3,500円/個',owned.helmet,'デスク・鞄に常備可能な折りたたみ型を推奨'],
+    ['A','スタッフ安全','安全靴・作業用手袋','瓦礫・ガラス散乱時の移動・作業','全スタッフ分','約3,000円/セット',false,'往診バッグに常備'],
+    ['A','水・食料備蓄','飲料水（2Lペットボトル）','スタッフ3日分（1人/日2L）','全スタッフ×6本','約250円/本',owned.water,'毎年交換（ローリングストック）'],
+    ['A','水・食料備蓄','非常食（カロリーメイト等）','スタッフ3日分','全スタッフ×3日分','約1,500円/人分',owned.food,'賞味期限管理。毎年3月に確認・補充'],
+    ['A','防火・防災設備','粉末消火器（ABC）','院内の初期消火','3本','約5,000円/本',owned.extinguisher,'各部屋に配置。5年毎に点検'],
+    ['B','非常用電源・照明','カセットガス発電機（インバーター式）','電子カルテ・医療機器への電力供給（停電長期化時）','1台','約12万円',owned.generator,'屋外専用。カセットボンベ30本以上常備'],
+    ['B','記録・事務','複写式診療記録用紙（2号紙等）','電子カルテ停止時の紙記録への切替','500枚〜','約25円/枚',false,'現状：'+v(d.paper_record,'要準備')],
+    ['B','移動・搬送','電動アシスト自転車','ガソリン不足・交通渋滞時の参集・往診移動','2〜3台','約12万円/台',false,'4km以上のスタッフの自転車・車参集用'],
+    ['B','防火・防災設備','土嚢袋または給水型土嚢','風水害時の浸水対策','20〜30個','約200〜1,500円/個',false,'入口・サーバー室周辺に設置'],
+    ['C','医療・衛生資材','AED（自動体外式除細動器）','院内・往診中の心肺停止対応','1台','約35万円',owned.aed,'リース契約も検討。すでにあれば点検確認を'],
+    ['C','記録・事務','タブレット端末（防水・頑丈型）','電子カルテのオフライン閲覧・写真記録','2台','約6万円',false,'重要患者情報をオフラインで閲覧できるよう設定'],
+  ];
+
+  const rows = items.map(([pri,cat,item,reason,qty,price,have,note])=>`
+    <tr class="priority-${pri.toLowerCase()}">
+      <td style="text-align:center"><span class="priority-badge badge-${pri.toLowerCase()}">${pri}</span></td>
+      <td style="font-weight:600">${cat}</td>
+      <td>${item}</td>
+      <td style="font-size:10px">${reason}</td>
+      <td style="text-align:center">${qty}</td>
+      <td style="text-align:right">${price}</td>
+      <td style="text-align:center;font-size:12px">${have?'<span style="color:green;font-weight:700">✓ 保有</span>':'<span style="color:#C00000">□ 未購入</span>'}</td>
+      <td style="font-size:10px;color:#666">${note}</td>
+    </tr>`).join('');
+
+  document.getElementById('tab-equip').innerHTML = `
+<div class="bcp-doc">
+  <div style="padding:20px 32px;background:var(--navy);color:white">
+    <h2 style="font-size:16px">災害用備品　購入リスト ｜ ${name}</h2>
+  </div>
+  <div style="padding:12px 32px;background:#FFF2CC;font-size:12px;color:#7F4C00">
+    <strong>優先度：</strong>
+    <span class="priority-badge badge-a">A 最優先（早急に購入）</span>&nbsp;
+    <span class="priority-badge badge-b">B 推奨（6ヶ月以内）</span>&nbsp;
+    <span class="priority-badge badge-c">C あると望ましい（1年以内）</span>
+    &nbsp;｜ ✓ 保有 = Excelで「○」を入力済みの備品。価格は参考価格です。
+  </div>
+  <div style="padding:24px 32px">
+    <table class="bcp-table">
+      <thead><tr><th>優先度</th><th>カテゴリ</th><th>品目名</th><th>用途</th><th>目安数量</th><th>参考単価</th><th>保有状況</th><th>備考</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:11px;color:#888;margin-top:16px">※ 消耗品（電池・食料・水・PPE等）はローリングストック方式で管理。毎年3月に在庫確認・使用期限チェック・補充を実施すること。</p>
+  </div>
+</div>`;
+}
+
+
+// =============================================
+// TAB 6: 場所別アクションカード
+// =============================================
+function genLocationCards(d, ftype='hybrid'){
+  const name = (()=>{
+    const _rn = v(d.clinic_name,'');
+    return (ftype==='nursing_station' && !_rn.includes('訪問看護') && !_rn.includes('ステーション'))
+      ? _rn.replace(/内科|外科|消化器科|小児科|整形外科|クリニック|診療所|医院/g,'').trim()+'訪問看護ステーション'
+      : _rn;
+  })();
+  const fac  = facilityTerm(ftype,'facility');
+  const cmd1 = v(d.commander1,'管理者');
+  const comm = v(d.comm_staff,'LINE・個人携帯');
+  const assoc = v(d.medical_assoc,'医師会');
+  const hotv = v(d.hot_vendor,'在宅酸素業者');
+
+  // カード1枚のHTMLを生成するヘルパー
+  function locCard(color, emoji, title, trigger, rule, sections){
+    const secs = sections.map(s => {
+      const items = s.items.map(item => {
+        if(item.startsWith('※') || item.startsWith('　') || item.startsWith('→')){
+          return `<div class="card-note">${item}</div>`;
+        }
+        return `<div class="card-item">${item}</div>`;
+      }).join('');
+      return `<div class="card-section-title" style="background:${color}">${s.t}</div>${items}`;
+    }).join('');
+    return `
+    <div class="action-card" style="border-top:4px solid ${color}">
+      <div class="card-header" style="background:${color}">${emoji} ${title}</div>
+      <div class="card-body">
+        <div style="font-size:10px;color:#666;margin-bottom:6px">【発動】${trigger}</div>
+        <div class="card-rule">${rule}</div>
+        ${secs}
+      </div>
+    </div>`;
+  }
+
+  // ── 地震・津波 ──
+  const eq_visit = locCard('#C00000','🔴','地震・津波　訪問先（患者宅）',
+    '緊急地震速報 or 大きな揺れを感じた時',
+    '★自らの安全確保が最優先　｜　行動後は'+fac+'（または代替拠点）へ帰所',
+    [
+      {t:'▶ まず身を守る', items:['自身の安全確保（机の下・壁際・頭を守る）','患者および同居家族の安全確保','避難出口の確保（ドアを開ける）']},
+      {t:'▶ 患者の医療機器確認', items:['電気を必要とする医療機器をバッテリーに切替','電動ベッド・エアマットの作動確認','夏：熱中症、冬：低体温症の環境整備']},
+      {t:'▶ 津波リスクがある場合', items:['揺れが落ち着いたら直ちに上階・高台に避難','患者に避難所移動 または 自宅避難を指示']},
+      {t:'▶ 二次災害予防', items:['ガスの火を止める','器具栓・ガス栓・メータガス栓を閉める','電気ブレーカーを落とす','コンセントを抜く','懐中電灯などの明かりを確保']},
+      {t:'▶ 連絡・報告', items:['スマホを「省電力モード」に切替','※通信可能 → '+fac+'に状況を報告し指示に従う','※通信不可 → 安全確保後、'+fac+'または代替拠点へ移動','　（道路不通の場合は最寄りの避難所へ一時避難）']},
+    ]
+  );
+
+  const eq_fac = locCard('#C00000','🔴','地震・津波　'+fac,
+    '緊急地震速報 or 大きな揺れを感じた時',
+    '★自らの安全確保が最優先　｜　行動後は'+fac+'（または代替拠点）へ帰所',
+    [
+      {t:'▶ まず身を守る', items:['自身の安全確保（頭を守る・机の下等）','避難出口の確保（ドアを開ける）']},
+      {t:'▶ 津波リスクがある場合', items:['揺れが落ち着いたら直ちに上階・高台に避難']},
+      {t:'▶ 二次災害予防', items:['ガスの火を止める','器具栓・ガス栓・メータガス栓を閉める','電気ブレーカーを落とす','コンセントを抜く','懐中電灯などの明かりを確保']},
+      {t:'▶ 管理者：判断・指揮', items:['代替拠点を開設するか判断','　→ 開設する場合：スタッフ・行政・関係機関へ周知','スマホを「省電力モード」に切替','行政・各種メディアから情報を集約','訪問スタッフの安否・状況を把握（LINE優先）','対応レベル（ステージ1〜4）を判断・宣言','患者安否確認を開始（A→B→C→D順）安否確認アプリ等使用',assoc+'・行政へ状況を報告']},
+      {t:'▶ 参集基準', items:['震度5強以上 → 自動参集','震度5弱以下・停電あり → オンライン参集','通信不通 → 徒歩・自転車圏内スタッフのみ自主参集']},
+    ]
+  );
+
+  // ── 火災 ──
+  const eq_car = locCard('#C00000','🔴','地震・津波　移動中（車内）',
+    '緊急地震速報 or 大きな揺れを感じた時',
+    '★自らの安全確保が最優先　｜　行動後は'+fac+'（または代替拠点）へ帰所',
+    [
+      {t:'▶ まず停車・安全確保', items:['急ブレーキを避け、ハザードランプを点灯しながら道路左側に停車','エンジンを切る','揺れが収まるまで車内で待機（落下物・倒壊に注意）']},
+      {t:'▶ 津波リスクがある場合', items:['車を捨てて直ちに高台・上階へ徒歩で避難','キーは付けたまま、ドアはロックしない（救助活動の妨げを防ぐ）']},
+      {t:'▶ 二次災害予防', items:['やむを得ず車を離れる場合：連絡先と行き先をメモに残す','道路が陥没・亀裂している場合は徒歩で迂回']},
+      {t:'▶ 連絡・報告', items:['スマホを「省電力モード」に切替','通信可能 → '+fac+'に現在地・状況を報告','通信不可 → 安全確認後、'+fac+'または代替拠点へ直行','道路不通の場合は最寄りの避難所へ一時避難']},
+    ]
+  );
+
+  const eq_home = locCard('#C00000','🔴','地震・津波　自宅',
+    '緊急地震速報 or 大きな揺れを感じた時',
+    '★自らの安全確保が最優先　｜　夜間の移動は原則禁止',
+    [
+      {t:'▶ まず身を守る', items:['自身・家族の安全確保（頭を守る・机の下等）','避難出口の確保（ドアを開ける）']},
+      {t:'▶ 津波リスクがある場合', items:['揺れが落ち着いたら直ちに上階・高台に避難']},
+      {t:'▶ 二次災害予防', items:['ガスの火を止める・器具栓・ガス栓を閉める','電気ブレーカーを落とす・コンセントを抜く','懐中電灯などの明かりを確保']},
+      {t:'▶ '+fac+'への連絡', items:['スマホを「省電力モード」に切替','LINEで'+fac+'に安否を報告','参集指示に従って行動（夜間の移動は原則禁止）']},
+      {t:'▶ 参集の目安', items:['震度5強以上 → 翌朝、安全確認後に参集','通信不通・夜間 → 自宅待機・夜明けを待つ','3日分の食料・水・モバイルバッテリーを確保']},
+    ]
+  );
+
+  const fire_visit = locCard('#E36C0A','🟠','火災　訪問先（患者宅）',
+    '火災・煙を発見した時　｜　通報 → 初期消火 → 避難の順',
+    '★自らの安全確保が最優先',
+    [
+      {t:'▶ STEP1 通報', items:['「火事だ！」と大声で叫び近隣に知らせる','119番通報（小さな火でも通報する）','声が出ない場合：音の出る物を叩いて知らせる']},
+      {t:'▶ STEP2 初期消火（火が天井に届く前のみ）', items:['消火器を使用（安全ピン抜く→ノズルを火元へ→レバーを握る）','炎が天井に燃え移ったら直ちに消火を中断し避難']},
+      {t:'▶ STEP3 避難', items:['燃えている部屋の窓・ドアを閉め空気を遮断','同居家族・近隣サポートを得て患者の避難を支援','服装にこだわらずできるだけ早く外に出る','濡らしたタオルで口・鼻をおおい、姿勢を低くする','いったん外に出たら絶対に中に戻らない','消防隊に逃げ遅れた人がいることを知らせる']},
+      {t:'▶ 避難後', items:[fac+'に状況を報告する']},
+    ]
+  );
+
+  const fire_car = locCard('#E36C0A','🟠','火災　移動中（車内）',
+    '火災・煙を発見した時',
+    '★自らの安全確保が最優先',
+    [
+      {t:'▶ 車両火災の場合', items:['安全な場所に停車し、エンジンを切る','全員が車外に出る（キーは付けたまま）','119番通報','初期消火が可能であれば車載消火器を使用','燃料タンクへの延焼前に50m以上離れる']},
+      {t:'▶ 通報・報告', items:[fac+'に状況を報告','指示に従って行動']},
+    ]
+  );
+
+  // ── 風水害 ──
+  const flood_visit = locCard('#0070C0','🔵','風水害　訪問先（患者宅）',
+    '避難指示（Lv.4）以上の発令、または管理者の判断',
+    '★自らの安全確保が最優先',
+    [
+      {t:'▶ 患者の安全確保', items:['患者の避難レベル・避難場所を確認','移動困難な患者は、まずその場で上階へ垂直避難','避難支援が必要な場合は2人体制で対応（原則：車で訪問）','患者・家族に避難を喚起し、避難先を記録する']},
+      {t:'▶ 訪問の継続判断', items:['Lv.3（高齢者等避難）以降：訪問ルートの安全を確認','Lv.4（避難指示）以降：訪問をキャンセルし電話・オンライン診療へ','Lv.5（緊急安全確保）：命を守る行動を最優先']},
+      {t:'▶ '+fac+'への連絡', items:['患者宅の状況・患者の状態を報告','次のアクションの指示に従う','通信維持なら電話診療を継続']},
+    ]
+  );
+
+  const flood_fac = locCard('#0070C0','🔵','風水害　'+fac,
+    '早期注意情報（Lv.1）から対応を開始',
+    '★警戒レベルに応じて段階的に行動',
+    [
+      {t:'▶ Lv.1 日頃からの備え', items:['3日分の食料・備蓄を確認','非常持ち出し品の点検','患者の避難場所・経路を事前確認']},
+      {t:'▶ Lv.2 早期注意情報', items:['気象情報を継続収集','スタッフの出退勤・シフト調整を検討','車のガソリンを満タンに','電化製品を床から上げる']},
+      {t:'▶ Lv.3 高齢者等避難', items:['移動困難な患者へ避難を喚起（訪問で支援）','訪問スケジュールを見直し・縮小','バディ（2人組）での訪問に切り替え']},
+      {t:'▶ Lv.4〜5 避難指示・緊急安全確保', items:['訪問をキャンセル・電話・オンライン診療へ切替','スタッフ全員が自宅待機または上階・避難所へ避難','患者の避難状況を電話で確認','通信維持なら電話診療を継続']},
+    ]
+  );
+
+  // ── 感染症 ──
+  const inf_visit = locCard('#7F6000','🟡','感染症　訪問先（患者宅）',
+    '地域での感染症発生期以降、管理者の判断で発動',
+    '★標準予防策を徹底　｜　自身の感染防御が前提',
+    [
+      {t:'▶ 訪問前の確認', items:['患者・家族の体調を事前電話確認','感染リスクの高い患者は訪問を最終の順番に回す','PPEを適切に装着してから入室','　標準：マスク・手袋・フェイスシールド（必要時）','　飛沫感染リスク：ガウン追加','　空気感染リスク：N95マスク着用']},
+      {t:'▶ 訪問中', items:['窓を2か所開けての換気（2点換気）を実施','接触ケアがある場合はガウン着用','診療内容の引き算（短時間接触）を意識する']},
+      {t:'▶ 訪問後', items:['PPEを適切に脱いで廃棄（外側に触れない）','手洗い・アルコール消毒を徹底','体調変化があれば即座に管理者に報告']},
+    ]
+  );
+
+  const inf_home = locCard('#7F6000','🟡','感染症　自宅',
+    '自身または同居者の体調変化を感じたら即報告',
+    '★体調変化は即報告　｜　出勤判断は管理者が行う',
+    [
+      {t:'▶ 体調変化時の対応', items:['発熱・咳・倦怠感など体調不良は即座に管理者に報告','同居者の体調変化も報告対象','管理者の指示に従い出勤・就業制限を判断']},
+      {t:'▶ 感染リスク軽減（勤務外）', items:['発生期：自治体・大手病院に準じた行動制限を遵守','不要不急の外出・会食を自粛','帰宅後の手洗い・うがい・着替えを徹底']},
+      {t:'▶ '+fac+'への連絡', items:['自身・家族の体調をLINEで日次報告','PCR結果等が判明次第、即座に管理者に連絡']},
+    ]
+  );
+
+  // ── 停電 ──
+  const pow_visit = locCard('#404040','⚫','停電　訪問先（患者宅）',
+    '停電発生を確認次第',
+    '★医療機器患者への対応が最優先',
+    [
+      {t:'▶ 医療機器の確認（最優先）', items:['人工呼吸器：内部バッテリーへの切替を確認','在宅酸素（HOT）：非常用ボンベへ切替、残量確認（'+hotv+'）','吸引機：バッテリー残量確認・手動式吸引器の準備','電動ベッド・エアマット：バッテリー確認','エレベーター停止の場合：上層階患者の状況を確認']},
+      {t:'▶ 安全確保', items:['火を使用しない（停電時の火災原因になる）','長期化しそうな場合はブレーカーを上げコンセントを抜く','　（復電時の機器故障・火災を防止）','冷暖房停止：夏は熱中症・冬は低体温症に注意']},
+      {t:'▶ '+fac+'への報告', items:['患者の医療機器状況・バッテリー残量を報告','長期化が予測される場合：受入施設調整を要請']},
+    ]
+  );
+
+  const pow_home = locCard('#404040','⚫','停電　自宅',
+    '停電発生を確認次第',
+    '★安全確保後、出勤可否を報告',
+    [
+      {t:'▶ 自宅の安全確保', items:['懐中電灯・非常灯で明かりを確保','火を使用しない','長期化が予測される場合：ブレーカーを上げコンセントを抜く','モバイルバッテリー・車のシガーソケットでスマホ充電']},
+      {t:'▶ '+fac+'への連絡', items:['自宅エリアの停電状況をLINEで報告','出勤可否・交通手段を報告']},
+    ]
+  );
+
+
+  // ── 火災: 追加2枚（診療所・自宅） ──
+  const fire_fac = locCard('#E36C0A','🟠','火災　'+fac,
+    '火災・煙を発見した時　｜　通報 → 初期消火 → 避難の順',
+    '★通報→初期消火（天井到達前のみ）→避難',
+    [
+      {t:'▶ STEP1 通報', items:['「火事だ！」と大声で叫ぶ','119番通報','院内ベルを鳴らす・隣近所に知らせる']},
+      {t:'▶ STEP2 初期消火（火が天井に届く前のみ）', items:['消火器：安全ピン→ノズルを火元へ→レバーを握る','炎が天井に燃え移ったら直ちに消火を中断し避難']},
+      {t:'▶ STEP3 避難', items:['燃えている部屋の窓・ドアを閉め空気を遮断','患者・スタッフを屋外へ誘導','濡れタオルで口・鼻をふさぎ姿勢を低くする','外に出たら絶対に戻らない','取り残された人がいたら消防隊に伝える']},
+      {t:'▶ 避難後・管理者対応', items:['全スタッフ・患者の安否確認',''+assoc+'・連携機関へ状況報告','代替拠点への移行を判断']},
+    ]
+  );
+
+  const fire_home = locCard('#E36C0A','🟠','火災　自宅',
+    '火災・煙を発見した時',
+    '★自らの安全確保が最優先　｜　逃げることを最優先に',
+    [
+      {t:'▶ STEP1 通報', items:['「火事だ！」と大声で叫び近隣に知らせる','119番通報']},
+      {t:'▶ STEP2 初期消火（火が天井に届く前のみ）', items:['消火器を使用','炎が天井に燃え移ったら直ちに中断し避難']},
+      {t:'▶ STEP3 避難', items:['家族を全員屋外へ誘導','濡れタオルで口・鼻をふさぎ姿勢を低くする','外に出たら絶対に戻らない']},
+      {t:'▶ '+fac+'への連絡', items:[fac+'に状況（自宅火災・出勤可否）を報告','管理者の指示に従って行動']},
+    ]
+  );
+
+  // ── 風水害: 追加2枚（移動中・自宅） ──
+  const flood_car = locCard('#0070C0','🔵','風水害　移動中（車内）',
+    '警戒レベル3以上、または管理者の指示',
+    '★無理な走行はしない　｜　車ごと流される前に脱出',
+    [
+      {t:'▶ 走行中の判断', items:['道路冠水を発見したら迂回（水深10cm超は走行不可）','アンダーパス・地下道は絶対に進入しない','立体交差の低い部分も危険、迂回する']},
+      {t:'▶ 車が水没しそうな場合', items:['速やかに車外へ脱出（水深30cmで車のドアが開きにくくなる）','脱出ハンマーでガラスを割って脱出','命綱・ロープがあれば利用する']},
+      {t:'▶ 安全な場所に停車できた場合', items:['エンジンを切り、高台・建物上階へ避難','車はやむを得ない場合のみキーを付けたまま置く']},
+      {t:'▶ '+fac+'への連絡', items:[fac+'に現在地・状況を報告','訪問継続可否の指示に従う']},
+    ]
+  );
+
+  const flood_home = locCard('#0070C0','🔵','風水害　自宅',
+    '早期注意情報（Lv.1）から対応開始',
+    '★警戒レベルに応じて段階的に行動',
+    [
+      {t:'▶ Lv.1〜2 事前準備', items:['自宅周辺のハザードマップを確認','非常持ち出し品・食料・水を確認','車のガソリンを満タンに','スマホを充電しておく']},
+      {t:'▶ Lv.3 高齢者等避難', items:['避難が必要か判断・家族と確認','避難する場合：避難場所・経路を確認してから出発']},
+      {t:'▶ Lv.4〜5 避難指示・緊急安全確保', items:['直ちに避難所または建物上階へ','外出が危険な場合：垂直避難（上階）を優先']},
+      {t:'▶ '+fac+'への連絡', items:['自宅エリアの浸水状況・自身の安否をLINEで報告','出勤可否・交通手段を報告']},
+    ]
+  );
+
+  // ── 感染症: 追加2枚（診療所・移動中） ──
+  const inf_fac = locCard('#7F6000','🟡','感染症　'+fac,
+    '地域での感染症発生期以降、管理者の判断で発動',
+    '★標準予防策の徹底　｜　スタッフ間の感染連鎖を防ぐ',
+    [
+      {t:'▶ 予防期（平時）', items:['手洗い・マスク・換気の標準予防策','PPEのローリングストック定期確認','感染リスクの高い患者対応スタッフを事前に決める']},
+      {t:'▶ 発生期', items:['会話時マスク必須・2点換気を常時実施','接触ケアあり→ガウン着用','体調不良のスタッフは即座に管理者に報告','外来患者の動線を分離（可能な場合）']},
+      {t:'▶ 流行期', items:['スタッフを2チームに分け交互勤務（コホーティング）','空気感染リスク→N95マスク着用','状態安定患者はオンライン診療・電話診療へ積極切替','感染者対応は期間限定・交代制（特定の人に偏らせない）']},
+    ]
+  );
+
+  const inf_car = locCard('#7F6000','🟡','感染症　移動中（車内）',
+    '感染症発生期以降の訪問移動時',
+    '★車内でも感染対策を継続',
+    [
+      {t:'▶ 移動前・移動中', items:['マスク着用を維持（車内でも外さない）','窓を少し開けて換気しながら移動','複数スタッフで同乗する場合はマスク着用・会話を最小限に']},
+      {t:'▶ 訪問間の感染対策', items:['患者宅を出たら手指消毒・PPEを適切に廃棄','車内にアルコール消毒・替えマスクを常備','汚染したPPEは密閉袋に入れて持ち帰り処理']},
+      {t:'▶ 体調変化時', items:['発熱・咳など体調変化を感じたら即座に管理者に連絡','管理者の指示があるまで次の訪問先へは行かない',''+fac+'に戻るか自宅待機かの判断を仰ぐ']},
+    ]
+  );
+
+  // ── 停電: 追加2枚（診療所・移動中） ──
+  const pow_fac = locCard('#404040','⚫','停電　'+fac,
+    '停電発生を確認次第',
+    '★医療機器患者への対応が最優先',
+    [
+      {t:'▶ 即時対応', items:['停電エリアと復旧見通しを確認（電力会社・行政）','ブレーカーを上げコンセントを抜く（復電時の機器故障・火災防止）','ポータブル電源・発電機を起動','懐中電灯・ランタンで照明確保']},
+      {t:'▶ 医療機器患者への対応', items:['人工呼吸器・HOT患者に連絡・訪問スタッフを優先派遣','在宅酸素業者（'+hotv+'）に連絡・状況確認','バッテリー残量の少ない患者を優先対応']},
+      {t:'▶ 記録・業務継続', items:['電子カルテ停止 → 紙記録へ切替（複写式2号紙等）','保健センター・'+assoc+'へ人工呼吸器患者の状況を報告','長期化する場合：連携病院への患者受入を調整']},
+      {t:'▶ 長期化する場合', items:['カセット式発電機を起動（屋外使用・換気必須）','近隣医療機関への患者受入を調整','行政・'+assoc+'に支援を要請']},
+    ]
+  );
+
+  const pow_car = locCard('#404040','⚫','停電　移動中（車内）',
+    '停電発生を確認次第',
+    '★信号停止に注意　｜　医療機器患者宅を優先確認',
+    [
+      {t:'▶ 運転中の注意', items:['信号が停止している交差点：一時停止して安全確認（一時停止標識と同じ扱い）','トンネル内停電：ハザードランプ点灯・徐行・壁に沿って停車','夜間停電：他車・歩行者が見えにくいため徐行']},
+      {t:'▶ 医療機器患者の確認', items:['担当患者に電話し医療機器の状況を確認','人工呼吸器・HOT患者は優先して訪問','バッテリー切れが迫っている患者から順に対応']},
+      {t:'▶ '+fac+'への報告', items:['現在地・訪問状況・患者の医療機器状況を報告','次の訪問先・行動の指示に従う','スマホを省電力モードに切替・車のシガーソケットで充電']},
+    ]
+  );
+
+  // ── セクション定義（外来専門は訪問先・移動中を除外） ──
+  const showVisit = isVisit(ftype);
+  const sections = [
+    { label:'🔴 地震・津波', color:'#C00000', cards:[...(showVisit?[eq_visit]:[]), eq_fac, ...(showVisit?[eq_car]:[]), eq_home] },
+    { label:'🟠 火災',       color:'#E36C0A', cards:[...(showVisit?[fire_visit]:[]), fire_fac, ...(showVisit?[fire_car]:[]), fire_home] },
+    { label:'🔵 風水害',     color:'#0070C0', cards:[...(showVisit?[flood_visit]:[]), flood_fac, ...(showVisit?[flood_car]:[]), flood_home] },
+    { label:'🟡 感染症',     color:'#7F6000', cards:[...(showVisit?[inf_visit]:[]), inf_fac, ...(showVisit?[inf_car]:[]), inf_home] },
+    { label:'⚫ 停電',       color:'#404040', cards:[...(showVisit?[pow_visit]:[]), pow_fac, ...(showVisit?[pow_car]:[]), pow_home] },
+  ];
+
+  // ── 表示（2列グリッド） ──
+
+  const html = sections.map(s => `
+    <div style="margin-bottom:32px">
+      <div style="background:${s.color};color:white;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:700;margin-bottom:12px">${s.label}</div>
+      <div class="cards-grid">${s.cards.join('')}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('tab-location').innerHTML = `
+    <div style="background:white;border-radius:8px;padding:20px 32px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+      <h2 style="color:var(--navy);font-size:16px;margin-bottom:4px">📍 場所別アクションカード ｜ ${name}</h2>
+      <p style="font-size:12px;color:#666">場所ごとの具体的な行動手順です。印刷してスタッフに配布・携帯してください。</p>
+    </div>
+    ${html}`;
+}
+
+// =============================================
+// UI
+// =============================================
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+function goBack(){
+  document.getElementById('select-screen').style.display='none';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('upload-screen').style.display='block';
+}
+function goBackToSelect(){
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('select-screen').style.display='block';
+}
+function goBackToUpload(){
+  document.getElementById('select-screen').style.display='none';
+  document.getElementById('upload-screen').style.display='block';
+}
+function printCurrent(){
+  document.querySelectorAll('.tab-content').forEach(t=>{
+    t.classList.remove('print-target');
+    t.classList.remove('print-all');
+  });
+  const a = document.querySelector('.tab-content.active');
+  if(a) a.classList.add('print-target');
+  window.print();
+}
+
+function printAll(){
+  // タブボタンの順番通りに印刷
+  const order = ['tab-bcp','tab-stage','tab-action','tab-location','tab-staff','tab-equip'];
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('print-target','print-all'));
+  order.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.add('print-all');
+  });
+  window.print();
+  setTimeout(()=>{
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('print-all'));
+    const active = document.querySelector('.tab-btn.active');
+    if(active) active.click();
+  }, 1000);
+}
+</script>
+</body>
+</html>
