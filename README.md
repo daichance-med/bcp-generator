@@ -53,7 +53,7 @@ ExcelファイルをアップロードするだけでBCP（業務継続計画）
 
  
 
-| [@daichance.med](https://www.instagram.com/daichance.med/) |
+[@daichance.med](https://www.instagram.com/daichance.med/)
 
 </div>
 > ⚠️ **iOSユーザーの方へ：** ローカルHTMLファイルをそのまま開くと動作しない場合があります。上記QRコードまたはURLからアクセスしてください。  
