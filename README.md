@@ -36,7 +36,26 @@ ExcelファイルをアップロードするだけでBCP（業務継続計画）
 | **[► アプリを開く](https://daichance-med.github.io/bcp-generator/BCP_generator_v3.html)** | **[► テンプレートをダウンロード](https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3.xlsx)** |
 
 </div>
+---
 
+## 📱 紹介リール動画（Instagram）
+
+<div align="center">
+
+| BCP自動生成アプリ 紹介動画 |
+|:---:|
+
+
+
+
+![Reel QR](IMG_20260603_220838_727.png)
+
+
+ 
+
+| [@daichance.med](https://www.instagram.com/daichance.med/) |
+
+</div>
 > ⚠️ **iOSユーザーの方へ：** ローカルHTMLファイルをそのまま開くと動作しない場合があります。上記QRコードまたはURLからアクセスしてください。  
 > また、iOS端末ではWord・PDF保存が正常に動作しない場合があります。**保存機能はPCのご利用を推奨します。**
 
