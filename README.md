@@ -1,4 +1,4 @@
-# BCP自動生成アプリ v3
+け# BCP自動生成アプリ v3
 ### 在宅医療機関向け　業務継続計画（BCP）たたき台自動生成アプリ
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -16,7 +16,7 @@ ExcelファイルをアップロードするだけでBCP（業務継続計画）
 
 ## ✨ 特徴
 
-- **完全ローカル動作** — サーバーへのデータ送信なし。個人情報はブラウザ内のみで処理
+- **完全ローカル動作** — サーバーへのデータ送信なし。個人情報はブラけウザ内のみで処理
 - **インターネット不要** — オフライン環境でも動作
 - **4種の事業所種別に対応** — 外来+訪問ハイブリッド / 訪問専門 / 外来専門 / 訪問看護ステーション
 - **6タブ構成** — BCP本文（8章）/ ステージ対応表 / アクションカード / 場所別カード（5災害×4場所）/ スタッフ出勤表 / 備品リスト
@@ -30,11 +30,14 @@ ExcelファイルをアップロードするだけでBCP（業務継続計画）
 
 <div align="center">
 
-| アプリを開く | テンプレートExcelをダウンロード |
-|:---:|:---:|
-| ![App QR](https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=1F4E79&bgcolor=ffffff&data=https%3A%2F%2Fdaichance-med.github.io%2Fbcp-generator%2FBCP_generator_v3.html) | ![Template QR](https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=375623&bgcolor=ffffff&data=https%3A%2F%2Fgithub.com%2Fdaichance-med%2Fbcp-generator%2Fraw%2Fmain%2FBCP_Template_v3.xlsx) |
-| **[► アプリを開く](https://daichance-med.github.io/bcp-generator/BCP_generator_v3.html)** | **[► テンプレートをダウンロード](https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3.xlsx)** |
+| アプリを開く | テンプレート（ハイブリッド） | テンプレート（外来専用） |
+|:---:|:---:|:---:|
+| 
 
+![App QR](https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://daichance-med.github.io/bcp-generator/BCP_generator_v3.html)
+![Hybrid QR](https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3_hybrid.xlsx)
+![Clinic QR](https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3_clinic.xlsx)
+| [► アプリを開く](https://daichance-med.github.io/bcp-generator/BCP_generator_v3.html) | [► hybridをダウンロード](https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3_hybrid.xlsx) | [► clinicをダウンロード](https://github.com/daichance-med/bcp-generator/raw/main/BCP_Template_v3_clinic.xlsx) |
 </div>
 ---
 
